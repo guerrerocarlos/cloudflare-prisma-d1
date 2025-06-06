@@ -9,7 +9,14 @@
 	"compatibility_date": "2025-06-06",
 	"observability": {
 		"enabled": true
-	}
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "prisma-demo-db",
+			"database_id": "3e6d0632-9d80-42c9-aae5-d98abc303480"
+		}
+	]
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
