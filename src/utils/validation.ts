@@ -33,6 +33,8 @@ export const updateUserSchema = z.object({
 // Thread schemas
 export const createThreadSchema = z.object({
   title: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).optional(), // Add description field
+  userId: cuidSchema, // Add userId field for now (will be from auth context later)
   metadata: z.record(z.string(), z.any()).optional()
 });
 
@@ -46,6 +48,7 @@ export const updateThreadSchema = z.object({
 export const createMessageSchema = z.object({
   role: messageRoleSchema,
   content: z.string().min(1).max(50000),
+  userId: cuidSchema.optional(), // Optional, required only for USER messages
   blocks: z.array(z.record(z.string(), z.any())).optional(),
   attachments: z.array(z.object({
     file_id: cuidSchema,

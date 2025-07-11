@@ -1,12 +1,18 @@
 import { Hono } from 'hono';
-import { PrismaClient } from './generated/prisma/';
-import { PrismaD1 } from '@prisma/adapter-d1';
+import { cors } from 'hono/cors';
+import { logger } from 'hono/logger';
 import { getDatabaseClient } from './utils/database';
 import { 
   createSuccessResponse, 
   createErrorResponse, 
   getCorrelationId 
 } from './utils/response';
+import { userRoutes } from './routes/users';
+import { threadRoutes } from './routes/threads';
+import { messageRoutes } from './routes/messages';
+import { artifactRoutes } from './routes/artifacts';
+import { fileRoutes } from './routes/files';
+import { reactionRoutes } from './routes/reactions';
 
 export interface Env {
   DB: D1Database;
@@ -14,16 +20,64 @@ export interface Env {
 
 const app = new Hono<{ Bindings: Env }>();
 
+// Middleware
+app.use('*', logger());
+app.use('*', cors({
+  origin: ['http://localhost:3000', 'https://*.rpotential.dev'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Correlation-ID'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  exposeHeaders: ['X-Correlation-ID'],
+  maxAge: 86400,
+  credentials: true
+}));
+
 // Health check endpoint
 app.get('/health', (c) => {
   return createSuccessResponse({ 
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    version: '2.0.0',
+    environment: 'development' // TODO: Make this dynamic
   });
 });
 
-// Basic users endpoint (temporary for testing)
+// API v1 health check
+app.get('/api/v1/health', (c) => {
+  return createSuccessResponse({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    version: '2.0.0',
+    environment: 'development' // TODO: Make this dynamic
+  });
+});
+
+// API version info
+app.get('/api/v1', (c) => {
+  return createSuccessResponse({
+    version: '1.0.0',
+    name: 'RPotential Experience Layer API',
+    description: 'Backend API for the Chief Potential Officer System',
+    documentation: 'https://api.rpotential.dev/docs',
+    endpoints: {
+      users: '/api/v1/users',
+      threads: '/api/v1/threads',
+      messages: '/api/v1/messages',
+      artifacts: '/api/v1/artifacts',
+      files: '/api/v1/files',
+      reactions: '/api/v1/reactions'
+    }
+  });
+});
+
+// Mount route modules
+app.route('/api/v1', userRoutes);
+app.route('/api/v1', threadRoutes);
+app.route('/api/v1', messageRoutes);
+app.route('/api/v1', artifactRoutes);
+app.route('/api/v1', fileRoutes);
+app.route('/api/v1', reactionRoutes);
+
+// Legacy endpoints for backward compatibility
 app.get('/users', async (c) => {
   try {
     const prisma = getDatabaseClient(c.env.DB);
@@ -52,12 +106,10 @@ app.get('/users', async (c) => {
   }
 });
 
-// Basic user creation endpoint (temporary for testing)
 app.post('/users', async (c) => {
   try {
     const prisma = getDatabaseClient(c.env.DB);
     
-    // Simple user creation for testing
     const body = await c.req.json();
     const user = await prisma.user.create({
       data: {
