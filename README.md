@@ -1,40 +1,260 @@
-## What is Prisma ORM?
+# Experience Layer Backend
 
-[Prisma ORM](https://www.prisma.io/orm) is a next-generation JavaScript and TypeScript ORM that unlocks a new level of developer experience when working with databases thanks to its intuitive data model, automated migrations, type-safety and auto-completion.
+A Cloudflare Worker-based microservice implementing the Experience Layer backend for the Chief Potential Officer System. Built with Prisma ORM, D1 database, and modern TypeScript.
 
-To learn more about Prisma ORM, refer to the [Prisma documentation](https://www.prisma.io/docs).
+## 🏗️ Architecture Overview
 
-## Query D1 from a Cloudflare Worker using Prisma ORM
+This backend implements the **Experience Layer** from the [Experience Layer Documentation](https://rpotential.atlassian.net/wiki/spaces/~712020cfbf91f01fc6437b9e33c2b931ddf177/pages/46661789/Experience+Layer), providing:
 
-This tutorial shows you how to set up and deploy a Cloudflare Worker that is accessing a D1 database from scratch.
+- **Thread Management**: Conversation contexts with memory and metadata
+- **Message System**: Rich messages with UI blocks and attachments  
+- **Artifact Management**: Structured outputs (insights, reports, dashboards)
+- **File Handling**: Secure upload/download with previews
+- **Authentication**: Google OAuth with role-based access control
+- **Real-time Features**: Server-Sent Events for live updates
 
-## Quick start
+## 🚀 Quick Start
 
-If you want to skip the steps and get started quickly, select **Deploy to Cloudflare** below.
+### Prerequisites
+- Node.js and pnpm
+- Cloudflare account
+- Wrangler CLI
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/docs-examples/tree/d1-prisma/d1/query-d1-using-prisma)
+### Development Setup
 
-This creates a repository in your GitHub account and deploys the application to Cloudflare Workers. Use this option if you are familiar with Cloudflare Workers, and wish to skip the step-by-step guidance.
+```bash
+# Install dependencies
+pnpm install
 
-You may wish to manually follow the steps if you are new to Cloudflare Workers.
+# Generate Prisma client
+npx prisma generate
 
-## Prerequisites
+# Run database migrations (local)
+npx wrangler d1 migrations apply prisma-demo-db --local
 
-* [`Node.js`](https://nodejs.org/en/) and [`npm`](https://docs.npmjs.com/getting-started) installed on your machine.
-* A [Cloudflare account](https://dash.cloudflare.com).
-
-## 1. Create a Cloudflare Worker
-
-Open your terminal, and run the following command to create a Cloudflare Worker using Cloudflare's [`hello-world`](https://github.com/cloudflare/workers-sdk/tree/4fdd8987772d914cf50725e9fa8cb91a82a6870d/packages/create-cloudflare/templates/hello-world) template:
-
-```sh
-npm create cloudflare@latest prisma-d1-example -- --type hello-world
+# Start development server
+pnpm dev
 ```
 
-In your terminal, you will be asked a series of questions related your project:
+### Testing the API
 
-1. Answer `yes` to using TypeScript.
-2. Answer `no` to deploying your Worker.
+```bash
+# Health check
+curl http://localhost:8787/health
+
+# Create user
+curl -X POST http://localhost:8787/users \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "name": "Test User", "role": "USER"}'
+
+# List users
+curl http://localhost:8787/users
+```
+
+## 📊 Database Schema
+
+### Core Entities
+
+```mermaid
+erDiagram
+    User ||--o{ Thread : creates
+    User ||--o{ Message : authors
+    User ||--o{ Artifact : creates
+    User ||--o{ Session : has
+    User ||--o{ File : uploads
+    User ||--o{ Reaction : makes
+    
+    Thread ||--o{ Message : contains
+    Thread ||--o{ Artifact : generates
+    
+    Message ||--o{ Reaction : receives
+    Message ||--o{ MessageFile : attachments
+    
+    Artifact ||--o{ ArtifactFile : attachments
+    
+    File ||--o{ MessageFile : linked_to
+    File ||--o{ ArtifactFile : linked_to
+```
+
+### Key Features
+
+- **CUID-based IDs** for better performance and security
+- **JSON metadata fields** for extensible data storage
+- **Proper relationships** with cascade deletes
+- **Enum types** for controlled vocabularies
+- **Optimized indexes** for query performance
+
+## 🛠️ Technology Stack
+
+- **Runtime**: Cloudflare Workers
+- **Database**: Cloudflare D1 (SQLite)
+- **ORM**: Prisma with D1 adapter
+- **Framework**: Hono (lightweight HTTP framework)
+- **Validation**: Zod schemas
+- **Language**: TypeScript
+- **Package Manager**: pnpm
+
+## 📁 Project Structure
+
+```
+src/
+├── types/              # TypeScript type definitions
+│   ├── api.ts         # API request/response types
+│   ├── blocks.ts      # UI blocks system (Slack-compatible)
+│   ├── database.ts    # Database entity types
+│   └── index.ts       # Type exports
+├── utils/             # Utility functions
+│   ├── database.ts    # Database helpers & Prisma client
+│   ├── validation.ts  # Zod validation schemas
+│   └── response.ts    # Response utilities & formatting
+├── routes/            # API route handlers (Phase 2)
+├── middleware/        # Request middleware (Phase 2)
+├── services/          # Business logic services (Phase 2)
+├── generated/         # Generated Prisma client
+└── index.ts          # Main application entry point
+```
+
+## 🔧 API Design
+
+### Response Format
+
+All API responses follow a consistent format:
+
+```json
+{
+  "success": true,
+  "data": { /* response data */ },
+  "metadata": {
+    "timestamp": "2025-07-11T19:32:54.281Z",
+    "correlation_id": "f68268be-9120-4813-bc76-51f3a89c3ea3",
+    "version": "1.0"
+  }
+}
+```
+
+### Error Handling
+
+Errors follow RFC 7807 Problem Details format:
+
+```json
+{
+  "success": false,
+  "error": {
+    "type": "https://api.rpotential.dev/problems/validation-error",
+    "title": "Validation Error",
+    "status": 400,
+    "detail": "The request contains invalid parameters",
+    "errors": { /* field-specific errors */ },
+    "timestamp": "2025-07-11T19:32:54.281Z",
+    "trace_id": "correlation-id-here"
+  }
+}
+```
+
+## 🎯 Implementation Status
+
+### ✅ Phase 1: Database Schema & Core Models (Complete)
+- Enhanced Prisma schema with all entities
+- Database migrations (local & remote)
+- Comprehensive TypeScript types
+- Basic API infrastructure
+- Health check and user endpoints
+
+### 🔄 Phase 2: API Architecture & Routing (In Progress)
+- Complete REST API endpoints
+- Authentication middleware
+- Request validation
+- Error handling
+
+### ⏳ Phase 3: Authentication & Security (Planned)
+- Google OAuth integration
+- JWT token management
+- Role-based access control
+- Rate limiting
+
+### ⏳ Phase 4: Message System & UI Blocks (Planned)
+- Rich message creation
+- UI blocks rendering
+- File attachments
+- Real-time updates
+
+### ⏳ Phase 5: File Management (Planned)
+- Secure file upload/download
+- Preview generation
+- Storage optimization
+
+### ⏳ Phase 6: Artifacts & Interactive Features (Planned)
+- Artifact management
+- Interactive actions
+- Form handling
+
+### ⏳ Phase 7: Real-time & Observability (Planned)
+- Server-Sent Events
+- WebSocket fallback
+- Comprehensive logging
+
+### ⏳ Phase 8: Production Readiness (Planned)
+- Performance optimization
+- Health monitoring
+- Documentation
+
+## 🧪 Testing
+
+### Manual Testing
+
+Use the provided curl commands in the Quick Start section to test basic functionality.
+
+### Automated Testing (Planned)
+
+```bash
+# Unit tests
+pnpm test
+
+# Integration tests
+pnpm test:integration
+
+# E2E tests
+pnpm test:e2e
+```
+
+## 🚀 Deployment
+
+### Local Development
+
+```bash
+pnpm dev
+```
+
+### Production Deployment
+
+```bash
+# Apply remote migrations
+npx wrangler d1 migrations apply prisma-demo-db --remote
+
+# Deploy to Cloudflare Workers
+pnpm deploy
+```
+
+## 📚 Documentation
+
+- [Phase 1 Implementation Summary](./PHASE1_SUMMARY.md)
+- [Experience Layer Requirements](https://rpotential.atlassian.net/wiki/spaces/~712020cfbf91f01fc6437b9e33c2b931ddf177/pages/46661789/Experience+Layer)
+- [API Documentation](./docs/api.md) (Coming in Phase 2)
+
+## 🤝 Contributing
+
+1. Follow the established patterns for types, validation, and responses
+2. Use proper TypeScript types throughout
+3. Add appropriate validation schemas for new endpoints
+4. Follow the database schema conventions
+5. Test locally before deploying
+
+## 🔗 Related Resources
+
+- [Prisma Documentation](https://www.prisma.io/docs)
+- [Cloudflare D1 Documentation](https://developers.cloudflare.com/d1/)
+- [Hono Framework](https://hono.dev/)
+- [Cloudflare Workers](https://developers.cloudflare.com/workers/)
 
 ## 2. Initialize Prisma ORM
 

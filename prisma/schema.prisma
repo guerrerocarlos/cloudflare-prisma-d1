@@ -12,9 +12,215 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Core user model with authentication and role management
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  nick  String?
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  nick        String?
+  role        UserRole @default(USER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastLoginAt DateTime?
+  
+  // Google OAuth fields
+  googleId    String?  @unique
+  avatarUrl   String?
+  
+  // Relationships
+  threads     Thread[]
+  messages    Message[]
+  artifacts   Artifact[]
+  reactions   Reaction[]
+  sessions    Session[]
+  uploadedFiles File[]
+  
+  @@map("users")
+}
+
+// User roles for RBAC
+enum UserRole {
+  ADMIN
+  USER
+  
+  @@map("user_roles")
+}
+
+// Authentication sessions
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+// Conversation threads
+model Thread {
+  id        String      @id @default(cuid())
+  userId    String
+  title     String?
+  status    ThreadStatus @default(ACTIVE)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  
+  // Thread metadata stored as JSON
+  metadata  Json?
+  
+  // Relationships
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  artifacts Artifact[]
+  
+  @@map("threads")
+}
+
+// Thread status enumeration
+enum ThreadStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+  
+  @@map("thread_status")
+}
+
+// Messages in threads (user and assistant)
+model Message {
+  id        String      @id @default(cuid())
+  threadId  String
+  userId    String?     // Null for assistant messages
+  role      MessageRole
+  content   String      // Fallback text content
+  blocks    Json?       // Rich UI blocks as JSON
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  editedAt  DateTime?
+  
+  // Message metadata stored as JSON
+  metadata  Json?
+  
+  // Relationships
+  thread    Thread     @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reactions Reaction[]
+  files     MessageFile[]
+  
+  @@map("messages")
+}
+
+// Message roles
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  
+  @@map("message_roles")
+}
+
+// File attachments and uploads
+model File {
+  id          String     @id @default(cuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  checksum    String
+  storageUrl  String
+  previewUrl  String?
+  uploadedBy  String
+  createdAt   DateTime   @default(now())
+  
+  // File metadata stored as JSON
+  metadata    Json?
+  
+  // Relationships
+  uploader    User         @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  messages    MessageFile[]
+  artifacts   ArtifactFile[]
+  
+  @@map("files")
+}
+
+// Junction table for message-file relationships
+model MessageFile {
+  id        String @id @default(cuid())
+  messageId String
+  fileId    String
+  
+  // Relationships
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  file    File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, fileId])
+  @@map("message_files")
+}
+
+// Structured artifacts (insights, reports, dashboards)
+model Artifact {
+  id          String       @id @default(cuid())
+  threadId    String
+  userId      String
+  type        ArtifactType
+  title       String
+  description String?
+  data        Json         // Artifact content stored as JSON
+  version     Int          @default(1)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Artifact metadata stored as JSON
+  metadata    Json?
+  
+  // Relationships
+  thread      Thread         @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files       ArtifactFile[]
+  
+  @@map("artifacts")
+}
+
+// Artifact types
+enum ArtifactType {
+  INSIGHT
+  REPORT
+  DASHBOARD
+  PDF
+  REFERENCE
+  
+  @@map("artifact_types")
+}
+
+// Junction table for artifact-file relationships
+model ArtifactFile {
+  id         String @id @default(cuid())
+  artifactId String
+  fileId     String
+  
+  // Relationships
+  artifact Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  file     File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  
+  @@unique([artifactId, fileId])
+  @@map("artifact_files")
+}
+
+// Emoji reactions on messages
+model Reaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  
+  // Relationships
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId, emoji])
+  @@map("reactions")
 }
