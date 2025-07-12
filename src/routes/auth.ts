@@ -10,7 +10,6 @@ import {
 } from '../utils/response';
 import { validateBody } from '../middleware/validation';
 import { authenticateUser, getCurrentUser } from '../middleware/auth';
-import { generateId } from '../utils/database';
 
 export interface Env {
   DB: D1Database;
@@ -79,7 +78,7 @@ authRoutes.post(
       }
 
       // Create new session
-      const token = generateId(); // Generate a unique session token
+      const token = crypto.randomUUID() + '-' + Date.now().toString(36); // Generate a unique session token
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 30); // 30 days from now
 

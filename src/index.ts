@@ -13,6 +13,7 @@ import { messageRoutes } from './routes/messages';
 import { artifactRoutes } from './routes/artifacts';
 import { fileRoutes } from './routes/files';
 import { reactionRoutes } from './routes/reactions';
+import { authRoutes } from './routes/auth';
 
 export interface Env {
   DB: D1Database;
@@ -76,6 +77,7 @@ app.route('/api/v1', messageRoutes);
 app.route('/api/v1', artifactRoutes);
 app.route('/api/v1', fileRoutes);
 app.route('/api/v1', reactionRoutes);
+app.route('/api/v1', authRoutes);
 
 // Legacy endpoints for backward compatibility
 app.get('/users', async (c) => {
