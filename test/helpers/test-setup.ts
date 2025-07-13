@@ -172,13 +172,9 @@ export function createTestApp(routes?: any) {
     app.route('/api/v1', routes);
   }
   
-  // Get the mocked Prisma client from the database utility
-  const mockPrismaClient = (database.getDatabaseClient as any)();
-  
   return {
     app,
-    mockEnv,
-    mockPrisma: mockPrismaClient
+    mockEnv
   };
 }
 
