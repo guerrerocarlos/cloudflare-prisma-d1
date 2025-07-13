@@ -13,9 +13,10 @@ export function createPrismaClient(database: D1Database): PrismaClient {
 let prismaClient: PrismaClient | null = null;
 
 export function getDatabaseClient(database?: D1Database): PrismaClient {
-  // For testing environments
-  if (process.env.NODE_ENV === 'test' && !database) {
-    return new PrismaClient();
+  // For testing environments, return a basic Prisma client or mock
+  if (process.env.NODE_ENV === 'test') {
+    // In tests, this should be mocked by the test setup
+    return {} as PrismaClient;
   }
   
   if (!database) {

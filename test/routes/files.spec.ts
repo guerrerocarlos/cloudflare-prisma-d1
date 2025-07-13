@@ -1,22 +1,116 @@
 // Unit tests for file routes
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { fileRoutes } from '../../src/routes/files';
-import { setupDatabaseMocks, setupAuthMocks, createTestApp, setupCommonMocks } from '../helpers/test-setup';
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
+import { Hono } from 'hono';
 
-// Setup mocks
-setupDatabaseMocks();
-setupAuthMocks();
+// Mock the database module before importing the routes
+vi.mock('../../src/utils/database', () => ({
+  getDatabaseClient: vi.fn(),
+  createPrismaClient: vi.fn(),
+  withTransaction: vi.fn(),
+  DatabaseError: class DatabaseError extends Error {
+    constructor(message: string, public code?: string, public constraint?: string) {
+      super(message);
+      this.name = 'DatabaseError';
+    }
+  },
+}));
+
+// Mock the auth middleware module  
+vi.mock('../../src/middleware/auth', () => ({
+  authenticateUser: vi.fn(),
+  requireRole: vi.fn(),
+  optionalAuth: vi.fn(),
+  getCurrentUser: vi.fn(),
+}));
+
+import { fileRoutes } from '../../src/routes/files';
+import { getDatabaseClient } from '../../src/utils/database';
+import { authenticateUser, requireRole } from '../../src/middleware/auth';
+
+// Create mock Prisma client
+function createMockPrismaClient() {
+  return {
+    file: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      delete: vi.fn(),
+    },
+    messageFile: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+    },
+    $transaction: vi.fn(),
+    $disconnect: vi.fn(),
+  };
+}
+
+// Setup common mocks for crypto, Date, etc.
+const originalDateNow = Date.now;
+
+beforeAll(() => {
+  // Mock crypto.randomUUID
+  const crypto = globalThis as any;
+  if (!crypto.crypto) {
+    crypto.crypto = {};
+  }
+  crypto.crypto.randomUUID = vi.fn().mockReturnValue('mock-uuid-123');
+  
+  // Mock Date.now for consistent timestamps
+  Date.now = vi.fn().mockReturnValue(1640995200000); // 2022-01-01
+});
+
+afterAll(() => {
+  // Restore original functions
+  vi.restoreAllMocks();
+  Date.now = originalDateNow;
+});
 
 describe('File Routes', () => {
-  let testContext: ReturnType<typeof createTestApp>;
+  let app: Hono;
+  let mockPrisma: ReturnType<typeof createMockPrismaClient>;
 
   beforeEach(() => {
-    // Setup common mocks (crypto, Date, etc.)
-    setupCommonMocks();
+    // Create test app
+    app = new Hono();
     
-    // Create a test app with the file routes
-    testContext = createTestApp(fileRoutes);
+    // Add middleware to set up the environment
+    app.use('*', async (c, next) => {
+      c.env = { DB: {} as D1Database } as any;
+      await next();
+    });
+    
+    app.route('/api/v1', fileRoutes);
+    
+    // Create fresh mock Prisma client
+    mockPrisma = createMockPrismaClient();
+    
+    // Setup database mock
+    vi.mocked(getDatabaseClient).mockReturnValue(mockPrisma as any);
+    
+    // Setup auth middleware mocks
+    vi.mocked(authenticateUser).mockImplementation(async (c, next) => {
+      c.set('authenticatedUser', {
+        id: 'test-user-id',
+        email: 'test@example.com',
+        role: 'USER',
+        name: 'Test User',
+        nick: 'testuser',
+        avatarUrl: 'https://example.com/avatar.jpg',
+      });
+      await next();
+      return undefined;
+    });
+    
+    vi.mocked(requireRole).mockImplementation(() => {
+      return vi.fn().mockImplementation(async (c, next) => {
+        await next();
+        return undefined;
+      });
+    });
     
     // Clear all mocks before each test
     vi.clearAllMocks();
@@ -45,23 +139,23 @@ describe('File Routes', () => {
         }
       ];
       
-      testContext.mockPrisma.file.findMany.mockResolvedValue(mockFiles);
+      mockPrisma.file.findMany.mockResolvedValue(mockFiles);
       
-      const response = await testContext.app.request('/api/v1/files');
+      const response = await app.request('/api/v1/files');
       
       expect(response.status).toBe(200);
       const body = await response.json() as any;
       expect(body.success).toBe(true);
       expect(body.data.items).toEqual(mockFiles);
-      expect(testContext.mockPrisma.file.findMany).toHaveBeenCalled();
+      expect(mockPrisma.file.findMany).toHaveBeenCalled();
     });
     
     it('should handle query parameters for filtering', async () => {
-      testContext.mockPrisma.file.findMany.mockResolvedValue([]);
+      mockPrisma.file.findMany.mockResolvedValue([]);
       
-      await testContext.app.request('/api/v1/files?mimeType=image&limit=10');
+      await app.request('/api/v1/files?mimeType=image&limit=10');
       
-      expect(testContext.mockPrisma.file.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.file.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             mimeType: { contains: 'image' }

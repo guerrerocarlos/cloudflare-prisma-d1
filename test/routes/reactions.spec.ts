@@ -77,9 +77,9 @@ describe('Reaction Routes', () => {
     });
     
     it('should return 404 when message not found', async () => {
-      mockPrisma.message.findUnique.mockResolvedValue(null);
+      testContext.mockPrisma.message.findUnique.mockResolvedValue(null);
       
-      const response = await app.request('/api/v1/messages/nonexistent/reactions');
+      const response = await testContext.app.request('/api/v1/messages/nonexistent/reactions');
       
       expect(response.status).toBe(404);
       const body = await response.json() as any;

@@ -1,24 +1,112 @@
 // Unit tests for user routes
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
 import { Hono } from 'hono';
-import { userRoutes } from '../../src/routes/users';
-import * as database from '../../src/utils/database';
-import { setupDatabaseMocks, setupAuthMocks, createTestApp, setupCommonMocks } from '../helpers/test-setup';
 
-// Setup all mocks
-setupDatabaseMocks();
-setupAuthMocks();
-setupCommonMocks();
+// Mock the database module before importing the routes
+vi.mock('../../src/utils/database', () => ({
+  getDatabaseClient: vi.fn(),
+  createPrismaClient: vi.fn(),
+  withTransaction: vi.fn(),
+  DatabaseError: class DatabaseError extends Error {
+    constructor(message: string, public code?: string, public constraint?: string) {
+      super(message);
+      this.name = 'DatabaseError';
+    }
+  },
+}));
+
+// Mock the auth middleware module  
+vi.mock('../../src/middleware/auth', () => ({
+  authenticateUser: vi.fn(),
+  requireRole: vi.fn(),
+  optionalAuth: vi.fn(),
+  getCurrentUser: vi.fn(),
+}));
+
+import { userRoutes } from '../../src/routes/users';
+import { getDatabaseClient } from '../../src/utils/database';
+import { authenticateUser, requireRole } from '../../src/middleware/auth';
+
+// Create mock Prisma client
+function createMockPrismaClient() {
+  return {
+    user: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      delete: vi.fn(),
+    },
+    $transaction: vi.fn(),
+    $disconnect: vi.fn(),
+  };
+}
+
+// Setup common mocks for crypto, Date, etc.
+const originalDateNow = Date.now;
+
+beforeAll(() => {
+  // Mock crypto.randomUUID
+  const crypto = globalThis as any;
+  if (!crypto.crypto) {
+    crypto.crypto = {};
+  }
+  crypto.crypto.randomUUID = vi.fn().mockReturnValue('mock-uuid-123');
+  
+  // Mock Date.now for consistent timestamps
+  Date.now = vi.fn().mockReturnValue(1640995200000); // 2022-01-01
+});
+
+afterAll(() => {
+  // Restore original functions
+  vi.restoreAllMocks();
+  Date.now = originalDateNow;
+});
 
 describe('User Routes', () => {
   let app: Hono;
-  let mockPrisma: any;
+  let mockPrisma: ReturnType<typeof createMockPrismaClient>;
 
   beforeEach(() => {
-    const testSetup = createTestApp(userRoutes);
-    app = testSetup.app;
-    mockPrisma = testSetup.mockPrisma;
+    // Create test app
+    app = new Hono();
+    
+    // Add middleware to set up the environment
+    app.use('*', async (c, next) => {
+      c.env = { DB: {} as D1Database } as any;
+      await next();
+    });
+    
+    app.route('/api/v1', userRoutes);
+    
+    // Create fresh mock Prisma client
+    mockPrisma = createMockPrismaClient();
+    
+    // Setup database mock
+    vi.mocked(getDatabaseClient).mockReturnValue(mockPrisma as any);
+    
+    // Setup auth middleware mocks - pass auth for most tests
+    vi.mocked(authenticateUser).mockImplementation(async (c, next) => {
+      c.set('authenticatedUser', {
+        id: 'test-user-id',
+        email: 'test@example.com',
+        role: 'ADMIN', // Make test user admin for all user operations
+        name: 'Test User',
+        nick: 'testuser',
+        avatarUrl: 'https://example.com/avatar.jpg',
+      });
+      await next();
+      return undefined;
+    });
+    
+    vi.mocked(requireRole).mockImplementation(() => {
+      return vi.fn().mockImplementation(async (c, next) => {
+        await next();
+        return undefined;
+      });
+    });
     
     // Clear all mocks before each test
     vi.clearAllMocks();

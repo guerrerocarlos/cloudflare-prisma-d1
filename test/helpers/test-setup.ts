@@ -1,6 +1,7 @@
 // Common test setup utilities
 import { vi } from 'vitest';
 import { Hono } from 'hono';
+import * as database from '../../src/utils/database';
 
 // Type helper for mock functions
 export interface MockPrismaFunction {
@@ -35,75 +36,89 @@ export function createPrismaMock(): MockPrismaFunction {
   return fn;
 }
 
-// Mock module imports before any other code
-vi.mock('../../src/utils/database');
-vi.mock('../../src/middleware/auth');
-
-// Import the mocked modules
-import * as database from '../../src/utils/database';
-import * as authModule from '../../src/middleware/auth';
+// Create a complete Prisma client mock
+export function createMockPrismaClient() {
+  return {
+    user: {
+      findUnique: createPrismaMock(),
+      create: createPrismaMock(),
+      update: createPrismaMock(),
+      findMany: createPrismaMock(),
+      count: createPrismaMock(),
+      delete: createPrismaMock(),
+    },
+    session: {
+      findUnique: createPrismaMock(),
+      create: createPrismaMock(),
+      delete: createPrismaMock(),
+      findMany: createPrismaMock(),
+    },
+    thread: {
+      findUnique: createPrismaMock(),
+      create: createPrismaMock(),
+      update: createPrismaMock(),
+      findMany: createPrismaMock(),
+      count: createPrismaMock(),
+    },
+    message: {
+      findUnique: createPrismaMock(),
+      create: createPrismaMock(),
+      update: createPrismaMock(),
+      findMany: createPrismaMock(),
+      count: createPrismaMock(),
+      delete: createPrismaMock(),
+    },
+    artifact: {
+      findUnique: createPrismaMock(),
+      create: createPrismaMock(),
+      update: createPrismaMock(),
+      findMany: createPrismaMock(),
+      count: createPrismaMock(),
+      delete: createPrismaMock(),
+    },
+    file: {
+      findUnique: createPrismaMock(),
+      create: createPrismaMock(),
+      update: createPrismaMock(),
+      findMany: createPrismaMock(),
+      count: createPrismaMock(),
+      delete: createPrismaMock(),
+    },
+    reaction: {
+      findMany: createPrismaMock(),
+      create: createPrismaMock(),
+      delete: createPrismaMock(),
+      findUnique: createPrismaMock(),
+      findFirst: createPrismaMock(),
+    },
+    messageFile: {
+      create: createPrismaMock(),
+      findMany: createPrismaMock(),
+    },
+    $transaction: vi.fn().mockImplementation((callback) => callback({})),
+    $disconnect: vi.fn().mockResolvedValue(undefined),
+  };
+}
 
 // Setup common database mocks
 export function setupDatabaseMocks() {
+  // Create a single mock client instance to share
+  const mockPrismaClient = createMockPrismaClient();
   
+  // Mock the database utility module using vi.mock for proper hoisting
   vi.mock('../../src/utils/database', () => ({
-    getDatabaseClient: vi.fn().mockReturnValue({
-      user: {
-        findUnique: createPrismaMock(),
-        create: createPrismaMock(),
-        update: createPrismaMock(),
-        findMany: createPrismaMock(),
-        count: createPrismaMock(),
-        delete: createPrismaMock(),
-      },
-      session: {
-        findUnique: createPrismaMock(),
-        create: createPrismaMock(),
-        delete: createPrismaMock(),
-        findMany: createPrismaMock(),
-      },
-      thread: {
-        findUnique: createPrismaMock(),
-        create: createPrismaMock(),
-        update: createPrismaMock(),
-        findMany: createPrismaMock(),
-        count: createPrismaMock(),
-      },
-      message: {
-        findUnique: createPrismaMock(),
-        create: createPrismaMock(),
-        update: createPrismaMock(),
-        findMany: createPrismaMock(),
-        count: createPrismaMock(),
-        delete: createPrismaMock(),
-      },
-      artifact: {
-        findUnique: createPrismaMock(),
-        create: createPrismaMock(),
-        update: createPrismaMock(),
-        findMany: createPrismaMock(),
-        count: createPrismaMock(),
-        delete: createPrismaMock(),
-      },
-      file: {
-        findUnique: createPrismaMock(),
-        create: createPrismaMock(),
-        update: createPrismaMock(),
-        findMany: createPrismaMock(),
-        count: createPrismaMock(),
-        delete: createPrismaMock(),
-      },
-      reaction: {
-        findMany: createPrismaMock(),
-        create: createPrismaMock(),
-        delete: createPrismaMock(),
-        findUnique: createPrismaMock(),
-        deleteMany: createPrismaMock(),
-        count: createPrismaMock(),
-      },
-      $transaction: vi.fn(async (callback) => await callback())
-    })
+    getDatabaseClient: vi.fn().mockReturnValue(mockPrismaClient),
+    createPrismaClient: vi.fn().mockReturnValue(mockPrismaClient),
+    withTransaction: vi.fn().mockImplementation((prisma, callback) => callback(mockPrismaClient)),
+    DatabaseError: class DatabaseError extends Error {
+      constructor(message: string, public code?: string, public constraint?: string) {
+        super(message);
+        this.name = 'DatabaseError';
+      }
+    },
   }));
+  
+  return mockPrismaClient;
 }
 
 // Setup auth middleware mocks
@@ -154,19 +169,13 @@ export function createTestApp(routes: any) {
   
   app.route('/api/v1', routes);
   
-  // Return the app and the mock DB reference
-  // Using the exported createPrismaMock function
-  
-  type PrismaMock = {
-    [K in keyof ReturnType<typeof database.getDatabaseClient>]: {
-      [M in keyof ReturnType<typeof database.getDatabaseClient>[K]]: ReturnType<typeof createPrismaMock>
-    }
-  };
+  // Return the app and the mock Prisma client
+  const mockPrismaClient = createMockPrismaClient();
   
   return {
     app,
     mockEnv,
-    mockPrisma: database.getDatabaseClient(mockEnv.DB) as unknown as PrismaMock
+    mockPrisma: mockPrismaClient
   };
 }
 
