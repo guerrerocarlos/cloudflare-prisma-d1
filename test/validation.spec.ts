@@ -87,8 +87,8 @@ describe('Validation Middleware', () => {
 
   describe('validateQuery', () => {
     const querySchema = z.object({
-      page: z.string().transform(Number).optional(),
-      limit: z.string().transform(Number).optional(),
+      page: z.string().regex(/^\d+$/, 'Must be a valid number').transform(Number).optional(),
+      limit: z.string().regex(/^\d+$/, 'Must be a valid number').transform(Number).optional(),
       search: z.string().optional()
     });
 

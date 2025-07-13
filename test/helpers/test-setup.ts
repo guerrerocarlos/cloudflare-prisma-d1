@@ -153,7 +153,7 @@ export function setupAuthMocks() {
 }
 
 // Create a Hono app with mock environment
-export function createTestApp(routes: any) {
+export function createTestApp(routes?: any) {
   const app = new Hono();
   
   // Create a mock environment with a DB property
@@ -167,10 +167,13 @@ export function createTestApp(routes: any) {
     await next();
   });
   
-  app.route('/api/v1', routes);
+  // Mount routes if provided
+  if (routes) {
+    app.route('/api/v1', routes);
+  }
   
-  // Return the app and the mock Prisma client
-  const mockPrismaClient = createMockPrismaClient();
+  // Get the mocked Prisma client from the database utility
+  const mockPrismaClient = (database.getDatabaseClient as any)();
   
   return {
     app,

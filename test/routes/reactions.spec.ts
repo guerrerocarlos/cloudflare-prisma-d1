@@ -1,59 +1,182 @@
-// Unit tests for reaction routes
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
+import { Hono } from 'hono';
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+// Mock the database module before importing the routes
+vi.mock('../../src/utils/database', () => ({
+  getDatabaseClient: vi.fn(),
+  createPrismaClient: vi.fn(),
+  withTransaction: vi.fn(),
+  DatabaseError: class DatabaseError extends Error {
+    constructor(message: string, public code?: string, public constraint?: string) {
+      super(message);
+      this.name = 'DatabaseError';
+    }
+  },
+}));
+
+// Mock the auth middleware module
+vi.mock('../../src/middleware/auth', () => ({
+  authenticateUser: vi.fn(),
+  requireRole: vi.fn(),
+  optionalAuth: vi.fn(),
+  getCurrentUser: vi.fn(),
+}));
+
 import { reactionRoutes } from '../../src/routes/reactions';
-import { setupDatabaseMocks, setupAuthMocks, createTestApp, setupCommonMocks } from '../helpers/test-setup';
+import { getDatabaseClient } from '../../src/utils/database';
+import { authenticateUser } from '../../src/middleware/auth';
 
-// Setup mocks
-setupDatabaseMocks();
-setupAuthMocks();
+// Create a mock function helper
+function createPrismaMock() {
+  const fn = vi.fn() as any;
+  fn.mockResolvedValue = (value: any) => {
+    fn.mockImplementation(() => Promise.resolve(value));
+    return fn;
+  };
+  fn.mockResolvedValueOnce = (value: any) => {
+    fn.mockImplementationOnce(() => Promise.resolve(value));
+    return fn;
+  };
+  fn.mockRejectedValue = (value: any) => {
+    fn.mockImplementation(() => Promise.reject(value));
+    return fn;
+  };
+  fn.mockRejectedValueOnce = (value: any) => {
+    fn.mockImplementationOnce(() => Promise.reject(value));
+    return fn;
+  };
+  return fn;
+}
+
+// Create a complete Prisma client mock
+function createMockPrismaClient() {
+  return {
+    user: {
+      findUnique: createPrismaMock(),
+      create: createPrismaMock(),
+      update: createPrismaMock(),
+      findMany: createPrismaMock(),
+      count: createPrismaMock(),
+      delete: createPrismaMock(),
+    },
+    thread: {
+      findUnique: createPrismaMock(),
+      create: createPrismaMock(),
+      update: createPrismaMock(),
+      findMany: createPrismaMock(),
+      count: createPrismaMock(),
+      delete: createPrismaMock(),
+    },
+    message: {
+      findUnique: createPrismaMock(),
+      create: createPrismaMock(),
+      update: createPrismaMock(),
+      findMany: createPrismaMock(),
+      count: createPrismaMock(),
+      delete: createPrismaMock(),
+    },
+    artifact: {
+      findUnique: createPrismaMock(),
+      create: createPrismaMock(),
+      update: createPrismaMock(),
+      findMany: createPrismaMock(),
+      count: createPrismaMock(),
+      delete: createPrismaMock(),
+    },
+    file: {
+      findUnique: createPrismaMock(),
+      create: createPrismaMock(),
+      update: createPrismaMock(),
+      findMany: createPrismaMock(),
+      count: createPrismaMock(),
+      delete: createPrismaMock(),
+    },
+    reaction: {
+      findUnique: createPrismaMock(),
+      findFirst: createPrismaMock(),
+      create: createPrismaMock(),
+      update: createPrismaMock(),
+      findMany: createPrismaMock(),
+      count: createPrismaMock(),
+      delete: createPrismaMock(),
+      deleteMany: createPrismaMock(),
+    },
+    session: {
+      findUnique: createPrismaMock(),
+      create: createPrismaMock(),
+      update: createPrismaMock(),
+      findMany: createPrismaMock(),
+      count: createPrismaMock(),
+      delete: createPrismaMock(),
+    },
+    $transaction: createPrismaMock(),
+    $connect: createPrismaMock(),
+    $disconnect: createPrismaMock(),
+  };
+}
 
 describe('Reaction Routes', () => {
-  let testContext: ReturnType<typeof createTestApp>;
+  let app: Hono;
+  let mockPrisma: ReturnType<typeof createMockPrismaClient>;
+
+  beforeAll(() => {
+    mockPrisma = createMockPrismaClient();
+    
+    // Mock the database client to return our mock Prisma
+    (getDatabaseClient as any).mockReturnValue(mockPrisma);
+
+    // Mock the authentication middleware
+    (authenticateUser as any).mockImplementation(async (c: any, next: any) => {
+      c.set('user', { id: 'user123456789012345678901', role: 'USER' });
+      await next();
+    });
+  });
 
   beforeEach(() => {
-    // Setup common mocks (crypto, Date, etc.)
-    setupCommonMocks();
+    // Create a new app for each test
+    app = new Hono();
+    app.route('/api/v1', reactionRoutes);
     
-    // Create a test app with the reaction routes
-    testContext = createTestApp(reactionRoutes);
-    
-    // Clear all mocks before each test
+    // Reset all mocks
     vi.clearAllMocks();
+  });
+
+  afterAll(() => {
+    vi.restoreAllMocks();
   });
 
   describe('GET /api/v1/messages/:messageId/reactions', () => {
     it('should return reactions for a message', async () => {
-      const messageId = 'test-message-id';
+      const messageId = 'msg1234567890123456789012';
       const mockReactions = [
         { 
-          id: 'reaction1', 
+          id: 'rxtn123456789012345678901', 
           messageId, 
           emoji: '👍', 
           createdAt: new Date().toISOString(),
-          user: { id: 'user1', name: 'User One' }
+          user: { id: 'user123456789012345678901', name: 'User One' }
         },
         { 
-          id: 'reaction2', 
+          id: 'rxtn123456789012345678902', 
           messageId, 
           emoji: '👍', 
           createdAt: new Date().toISOString(),
-          user: { id: 'user2', name: 'User Two' }
+          user: { id: 'user123456789012345678902', name: 'User Two' }
         },
         { 
-          id: 'reaction3', 
+          id: 'rxtn123456789012345678903', 
           messageId, 
           emoji: '❤️', 
           createdAt: new Date().toISOString(),
-          user: { id: 'user3', name: 'User Three' }
+          user: { id: 'user123456789012345678903', name: 'User Three' }
         }
       ];
       
       // Mock message existence
-      testContext.mockPrisma.message.findUnique.mockResolvedValue({ id: messageId });
-      testContext.mockPrisma.reaction.findMany.mockResolvedValue(mockReactions);
+      mockPrisma.message.findUnique.mockResolvedValue({ id: messageId });
+      mockPrisma.reaction.findMany.mockResolvedValue(mockReactions);
       
-      const response = await testContext.app.request(`/api/v1/messages/${messageId}/reactions`);
+      const response = await app.request(`/api/v1/messages/${messageId}/reactions`);
       
       expect(response.status).toBe(200);
       const body = await response.json() as any;
@@ -77,9 +200,9 @@ describe('Reaction Routes', () => {
     });
     
     it('should return 404 when message not found', async () => {
-      testContext.mockPrisma.message.findUnique.mockResolvedValue(null);
+      mockPrisma.message.findUnique.mockResolvedValue(null);
       
-      const response = await testContext.app.request('/api/v1/messages/nonexistent/reactions');
+      const response = await app.request('/api/v1/messages/notfnd123456789012345678901/reactions');
       
       expect(response.status).toBe(404);
       const body = await response.json() as any;

@@ -2,32 +2,33 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { authenticateUser, optionalAuth, requireRole, getCurrentUser } from '../src/middleware/auth';
-import { setupDatabaseMocks, setupAuthMocks, createTestApp, setupCommonMocks } from './helpers/test-setup';
+import { setupDatabaseMocks, setupAuthMocks, setupCommonMocks } from './helpers/test-setup';
 import type { Context } from 'hono';
+import { Hono } from 'hono';
 
 // Setup mocks
 setupDatabaseMocks();
 setupAuthMocks();
 
 describe('Authentication Middleware', () => {
-  let testContext: ReturnType<typeof createTestApp>;
+  let app: Hono;
 
   beforeEach(() => {
     setupCommonMocks();
     
-    // Create a test app with empty routes for auth middleware tests
-    testContext = createTestApp(app => app);
+    // Create a simple Hono app for testing middleware
+    app = new Hono();
     
     vi.clearAllMocks();
   });
 
   describe('authenticateUser', () => {
     it('should fail with missing Authorization header', async () => {
-      testContext.app.get('/test', authenticateUser, (c: Context) => {
+      app.get('/test', authenticateUser, (c: Context) => {
         return c.json({ success: true });
       });
 
-      const response = await testContext.app.request('/test');
+      const response = await app.request('/test');
 
       expect(response.status).toBe(401);
       const body = await response.json() as any;
@@ -36,11 +37,11 @@ describe('Authentication Middleware', () => {
     });
 
     it('should fail with invalid Authorization header format', async () => {
-      testContext.app.get('/test', authenticateUser, (c: Context) => {
+      app.get('/test', authenticateUser, (c: Context) => {
         return c.json({ success: true });
       });
 
-      const response = await testContext.app.request('/test', {
+      const response = await app.request('/test', {
         headers: {
           'Authorization': 'Invalid token-format'
         }
@@ -53,11 +54,11 @@ describe('Authentication Middleware', () => {
     });
 
     it('should fail with empty token', async () => {
-      testContext.app.get('/test', authenticateUser, (c: Context) => {
+      app.get('/test', authenticateUser, (c: Context) => {
         return c.json({ success: true });
       });
 
-      const response = await testContext.app.request('/test', {
+      const response = await app.request('/test', {
         headers: {
           'Authorization': 'Bearer '
         }
@@ -72,12 +73,12 @@ describe('Authentication Middleware', () => {
 
   describe('optionalAuth', () => {
     it('should continue without authentication when no header is provided', async () => {
-      testContext.app.get('/test', optionalAuth, (c: Context) => {
+      app.get('/test', optionalAuth, (c: Context) => {
         const user = getCurrentUser(c);
         return c.json({ success: true, user });
       });
 
-      const response = await testContext.app.request('/test');
+      const response = await app.request('/test');
 
       expect(response.status).toBe(200);
       const body = await response.json() as any;
@@ -86,12 +87,12 @@ describe('Authentication Middleware', () => {
     });
 
     it('should continue without authentication when invalid token is provided', async () => {
-      testContext.app.get('/test', optionalAuth, (c: Context) => {
+      app.get('/test', optionalAuth, (c: Context) => {
         const user = getCurrentUser(c);
         return c.json({ success: true, user });
       });
 
-      const response = await testContext.app.request('/test', {
+      const response = await app.request('/test', {
         headers: {
           'Authorization': 'Bearer invalid-token'
         }
@@ -106,11 +107,11 @@ describe('Authentication Middleware', () => {
 
   describe('requireRole', () => {
     it('should fail when no user is authenticated', async () => {
-      testContext.app.get('/test', requireRole(['ADMIN']), (c: Context) => {
+      app.get('/test', requireRole(['ADMIN']), (c: Context) => {
         return c.json({ success: true });
       });
 
-      const response = await testContext.app.request('/test');
+      const response = await app.request('/test');
 
       expect(response.status).toBe(401);
       const body = await response.json() as any;
@@ -119,7 +120,7 @@ describe('Authentication Middleware', () => {
     });
 
     it('should fail when user does not have required role', async () => {
-      testContext.app.get('/test', async (c: Context) => {
+      app.get('/test', async (c: Context) => {
         // Mock authenticated user with USER role
         c.set('authenticatedUser', {
           id: 'user-id',
@@ -138,7 +139,7 @@ describe('Authentication Middleware', () => {
         return c.json({ success: true });
       });
 
-      const response = await testContext.app.request('/test', {
+      const response = await app.request('/test', {
         headers: {
           'Authorization': 'Bearer test-token'
         }
@@ -153,12 +154,12 @@ describe('Authentication Middleware', () => {
 
   describe('getCurrentUser', () => {
     it('should return null when no user is authenticated', async () => {
-      testContext.app.get('/test', (c: Context) => {
+      app.get('/test', (c: Context) => {
         const user = getCurrentUser(c);
         return c.json({ success: true, user });
       });
 
-      const response = await testContext.app.request('/test');
+      const response = await app.request('/test');
 
       expect(response.status).toBe(200);
       const body = await response.json() as any;
@@ -174,13 +175,13 @@ describe('Authentication Middleware', () => {
         role: 'USER'
       };
 
-      testContext.app.get('/test', (c: Context) => {
+      app.get('/test', (c: Context) => {
         c.set('authenticatedUser', mockUser);
         const user = getCurrentUser(c);
         return c.json({ success: true, user });
       });
 
-      const response = await testContext.app.request('/test');
+      const response = await app.request('/test');
 
       expect(response.status).toBe(200);
       const body = await response.json() as any;
