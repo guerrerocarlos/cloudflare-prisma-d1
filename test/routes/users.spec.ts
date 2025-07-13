@@ -4,39 +4,21 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
 import { userRoutes } from '../../src/routes/users';
 import * as database from '../../src/utils/database';
+import { setupDatabaseMocks, setupAuthMocks, createTestApp, setupCommonMocks } from '../helpers/test-setup';
 
-// Mock the database client
-vi.mock('../../src/utils/database', () => ({
-  getDatabaseClient: () => ({
-    user: {
-      findUnique: vi.fn(),
-      findMany: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    }
-  })
-}));
-
-// Mock the auth middleware
-vi.mock('../../src/middleware/auth', () => ({
-  authenticateUser: vi.fn((c) => {
-    c.set('user', { id: 'test-user-id', email: 'test@example.com', role: 'USER' });
-    return c.next();
-  }),
-  requireRole: () => vi.fn((c) => c.next()),
-}));
+// Setup all mocks
+setupDatabaseMocks();
+setupAuthMocks();
+setupCommonMocks();
 
 describe('User Routes', () => {
   let app: Hono;
   let mockPrisma: any;
 
   beforeEach(() => {
-    app = new Hono();
-    app.route('/api/v1/users', userRoutes);
-    
-    // Get mock reference for assertions
-    mockPrisma = vi.mocked(database.getDatabaseClient());
+    const testSetup = createTestApp(userRoutes);
+    app = testSetup.app;
+    mockPrisma = testSetup.mockPrisma;
     
     // Clear all mocks before each test
     vi.clearAllMocks();

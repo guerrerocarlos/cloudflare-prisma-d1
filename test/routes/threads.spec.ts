@@ -1,48 +1,22 @@
 // Unit tests for thread routes
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Hono } from 'hono';
 import { threadRoutes } from '../../src/routes/threads';
-import * as database from '../../src/utils/database';
+import { setupDatabaseMocks, setupAuthMocks, createTestApp, setupCommonMocks } from '../helpers/test-setup';
 
-// Mock the database client
-vi.mock('../../src/utils/database', () => ({
-  getDatabaseClient: () => ({
-    thread: {
-      findUnique: vi.fn(),
-      findMany: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-    message: {
-      findMany: vi.fn()
-    },
-    artifact: {
-      findMany: vi.fn()
-    }
-  })
-}));
-
-// Mock the auth middleware
-vi.mock('../../src/middleware/auth', () => ({
-  authenticateUser: vi.fn((c) => {
-    c.set('user', { id: 'test-user-id', email: 'test@example.com', role: 'USER' });
-    return c.next();
-  }),
-  requireRole: () => vi.fn((c) => c.next()),
-}));
+// Setup mocks
+setupDatabaseMocks();
+setupAuthMocks();
 
 describe('Thread Routes', () => {
-  let app: Hono;
-  let mockPrisma: any;
+  let testContext: ReturnType<typeof createTestApp>;
 
   beforeEach(() => {
-    app = new Hono();
-    app.route('/api/v1/threads', threadRoutes);
+    // Setup common mocks (crypto, Date, etc.)
+    setupCommonMocks();
     
-    // Get mock reference for assertions
-    mockPrisma = vi.mocked(database.getDatabaseClient() as any);
+    // Create a test app with the thread routes
+    testContext = createTestApp(threadRoutes);
     
     // Clear all mocks before each test
     vi.clearAllMocks();
@@ -55,15 +29,15 @@ describe('Thread Routes', () => {
         { id: 'thread2', title: 'Thread Two', userId: 'test-user-id', createdAt: new Date().toISOString() }
       ];
       
-      mockPrisma.thread.findMany.mockResolvedValue(mockThreads);
+      testContext.mockPrisma.thread.findMany.mockResolvedValue(mockThreads);
       
-      const response = await app.request('/api/v1/threads');
+      const response = await testContext.app.request('/api/v1/threads');
       
       expect(response.status).toBe(200);
       const body = await response.json() as any;
       expect(body.success).toBe(true);
       expect(body.data.items).toEqual(mockThreads);
-      expect(mockPrisma.thread.findMany).toHaveBeenCalledWith(
+      expect(testContext.mockPrisma.thread.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId: 'test-user-id', trashed: false }
         })
@@ -71,11 +45,11 @@ describe('Thread Routes', () => {
     });
     
     it('should handle pagination parameters', async () => {
-      mockPrisma.thread.findMany.mockResolvedValue([]);
+      testContext.mockPrisma.thread.findMany.mockResolvedValue([]);
       
-      await app.request('/api/v1/threads?page=2&limit=10');
+      await testContext.app.request('/api/v1/threads?page=2&limit=10');
       
-      expect(mockPrisma.thread.findMany).toHaveBeenCalledWith(
+      expect(testContext.mockPrisma.thread.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           skip: 10,
           take: 10
@@ -93,23 +67,23 @@ describe('Thread Routes', () => {
         createdAt: new Date().toISOString()
       };
       
-      mockPrisma.thread.findUnique.mockResolvedValue(mockThread);
+      testContext.mockPrisma.thread.findUnique.mockResolvedValue(mockThread);
       
-      const response = await app.request('/api/v1/threads/thread1');
+      const response = await testContext.app.request('/api/v1/threads/thread1');
       
       expect(response.status).toBe(200);
       const body = await response.json() as any;
       expect(body.success).toBe(true);
       expect(body.data).toEqual(mockThread);
-      expect(mockPrisma.thread.findUnique).toHaveBeenCalledWith({
+      expect(testContext.mockPrisma.thread.findUnique).toHaveBeenCalledWith({
         where: { id: 'thread1' }
       });
     });
     
     it('should return 404 when thread not found', async () => {
-      mockPrisma.thread.findUnique.mockResolvedValue(null);
+      testContext.mockPrisma.thread.findUnique.mockResolvedValue(null);
       
-      const response = await app.request('/api/v1/threads/nonexistent');
+      const response = await testContext.app.request('/api/v1/threads/nonexistent');
       
       expect(response.status).toBe(404);
       const body = await response.json() as any;
@@ -133,9 +107,9 @@ describe('Thread Routes', () => {
         trashed: false
       };
       
-      mockPrisma.thread.create.mockResolvedValue(createdThread);
+      testContext.mockPrisma.thread.create.mockResolvedValue(createdThread);
       
-      const response = await app.request('/api/v1/threads', {
+      const response = await testContext.app.request('/api/v1/threads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newThread)
@@ -145,7 +119,7 @@ describe('Thread Routes', () => {
       const body = await response.json() as any;
       expect(body.success).toBe(true);
       expect(body.data).toEqual(createdThread);
-      expect(mockPrisma.thread.create).toHaveBeenCalledWith({
+      expect(testContext.mockPrisma.thread.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           ...newThread,
           userId: 'test-user-id'
@@ -168,10 +142,10 @@ describe('Thread Routes', () => {
         updatedAt: new Date().toISOString()
       };
       
-      mockPrisma.thread.findUnique.mockResolvedValue({ id: threadId, userId: 'test-user-id' });
-      mockPrisma.thread.update.mockResolvedValue(updatedThread);
+      testContext.mockPrisma.thread.findUnique.mockResolvedValue({ id: threadId, userId: 'test-user-id' });
+      testContext.mockPrisma.thread.update.mockResolvedValue(updatedThread);
       
-      const response = await app.request(`/api/v1/threads/${threadId}`, {
+      const response = await testContext.app.request(`/api/v1/threads/${threadId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData)
@@ -181,16 +155,16 @@ describe('Thread Routes', () => {
       const body = await response.json() as any;
       expect(body.success).toBe(true);
       expect(body.data).toEqual(updatedThread);
-      expect(mockPrisma.thread.update).toHaveBeenCalledWith({
+      expect(testContext.mockPrisma.thread.update).toHaveBeenCalledWith({
         where: { id: threadId },
         data: expect.objectContaining(updateData)
       });
     });
     
     it('should return 404 when thread to update not found', async () => {
-      mockPrisma.thread.findUnique.mockResolvedValue(null);
+      testContext.mockPrisma.thread.findUnique.mockResolvedValue(null);
       
-      const response = await app.request('/api/v1/threads/nonexistent', {
+      const response = await testContext.app.request('/api/v1/threads/nonexistent', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'Updated' })
@@ -200,12 +174,12 @@ describe('Thread Routes', () => {
     });
     
     it('should prevent updating a thread owned by another user', async () => {
-      mockPrisma.thread.findUnique.mockResolvedValue({ 
+      testContext.mockPrisma.thread.findUnique.mockResolvedValue({ 
         id: 'other-users-thread', 
         userId: 'different-user-id' 
       });
       
-      const response = await app.request('/api/v1/threads/other-users-thread', {
+      const response = await testContext.app.request('/api/v1/threads/other-users-thread', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'Trying to update' })
@@ -224,26 +198,26 @@ describe('Thread Routes', () => {
       const mockThread = { id: threadId, userId: 'test-user-id' };
       const trashedThread = { ...mockThread, trashed: true };
       
-      mockPrisma.thread.findUnique.mockResolvedValue(mockThread);
-      mockPrisma.thread.update.mockResolvedValue(trashedThread);
+      testContext.mockPrisma.thread.findUnique.mockResolvedValue(mockThread);
+      testContext.mockPrisma.thread.update.mockResolvedValue(trashedThread);
       
-      const response = await app.request(`/api/v1/threads/${threadId}`, {
+      const response = await testContext.app.request(`/api/v1/threads/${threadId}`, {
         method: 'DELETE'
       });
       
       expect(response.status).toBe(200);
       const body = await response.json() as any;
       expect(body.success).toBe(true);
-      expect(mockPrisma.thread.update).toHaveBeenCalledWith({
+      expect(testContext.mockPrisma.thread.update).toHaveBeenCalledWith({
         where: { id: threadId },
         data: { trashed: true }
       });
     });
     
     it('should return 404 when thread to delete not found', async () => {
-      mockPrisma.thread.findUnique.mockResolvedValue(null);
+      testContext.mockPrisma.thread.findUnique.mockResolvedValue(null);
       
-      const response = await app.request('/api/v1/threads/nonexistent', {
+      const response = await testContext.app.request('/api/v1/threads/nonexistent', {
         method: 'DELETE'
       });
       
@@ -251,12 +225,12 @@ describe('Thread Routes', () => {
     });
     
     it('should prevent deleting a thread owned by another user', async () => {
-      mockPrisma.thread.findUnique.mockResolvedValue({ 
+      testContext.mockPrisma.thread.findUnique.mockResolvedValue({ 
         id: 'other-users-thread', 
         userId: 'different-user-id' 
       });
       
-      const response = await app.request('/api/v1/threads/other-users-thread', {
+      const response = await testContext.app.request('/api/v1/threads/other-users-thread', {
         method: 'DELETE'
       });
       
@@ -272,16 +246,16 @@ describe('Thread Routes', () => {
         { id: 'msg2', threadId, content: 'Message 2', createdAt: new Date().toISOString() }
       ];
       
-      mockPrisma.thread.findUnique.mockResolvedValue({ id: threadId, userId: 'test-user-id' });
-      mockPrisma.message.findMany.mockResolvedValue(mockMessages);
+      testContext.mockPrisma.thread.findUnique.mockResolvedValue({ id: threadId, userId: 'test-user-id' });
+      testContext.mockPrisma.message.findMany.mockResolvedValue(mockMessages);
       
-      const response = await app.request(`/api/v1/threads/${threadId}/messages`);
+      const response = await testContext.app.request(`/api/v1/threads/${threadId}/messages`);
       
       expect(response.status).toBe(200);
       const body = await response.json() as any;
       expect(body.success).toBe(true);
       expect(body.data.items).toEqual(mockMessages);
-      expect(mockPrisma.message.findMany).toHaveBeenCalledWith(
+      expect(testContext.mockPrisma.message.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { threadId }
         })
@@ -289,9 +263,9 @@ describe('Thread Routes', () => {
     });
     
     it('should return 404 when thread not found', async () => {
-      mockPrisma.thread.findUnique.mockResolvedValue(null);
+      testContext.mockPrisma.thread.findUnique.mockResolvedValue(null);
       
-      const response = await app.request('/api/v1/threads/nonexistent/messages');
+      const response = await testContext.app.request('/api/v1/threads/nonexistent/messages');
       
       expect(response.status).toBe(404);
     });
@@ -305,16 +279,16 @@ describe('Thread Routes', () => {
         { id: 'art2', threadId, type: 'DASHBOARD', title: 'Dashboard 1', createdAt: new Date().toISOString() }
       ];
       
-      mockPrisma.thread.findUnique.mockResolvedValue({ id: threadId, userId: 'test-user-id' });
-      mockPrisma.artifact.findMany.mockResolvedValue(mockArtifacts);
+      testContext.mockPrisma.thread.findUnique.mockResolvedValue({ id: threadId, userId: 'test-user-id' });
+      testContext.mockPrisma.artifact.findMany.mockResolvedValue(mockArtifacts);
       
-      const response = await app.request(`/api/v1/threads/${threadId}/artifacts`);
+      const response = await testContext.app.request(`/api/v1/threads/${threadId}/artifacts`);
       
       expect(response.status).toBe(200);
       const body = await response.json() as any;
       expect(body.success).toBe(true);
       expect(body.data.items).toEqual(mockArtifacts);
-      expect(mockPrisma.artifact.findMany).toHaveBeenCalledWith(
+      expect(testContext.mockPrisma.artifact.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { threadId }
         })
@@ -322,9 +296,9 @@ describe('Thread Routes', () => {
     });
     
     it('should return 404 when thread not found', async () => {
-      mockPrisma.thread.findUnique.mockResolvedValue(null);
+      testContext.mockPrisma.thread.findUnique.mockResolvedValue(null);
       
-      const response = await app.request('/api/v1/threads/nonexistent/artifacts');
+      const response = await testContext.app.request('/api/v1/threads/nonexistent/artifacts');
       
       expect(response.status).toBe(404);
     });

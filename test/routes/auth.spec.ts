@@ -4,52 +4,21 @@ import { describe, it, expect, beforeEach, vi, afterAll } from 'vitest';
 import { Hono } from 'hono';
 import { authRoutes } from '../../src/routes/auth';
 import * as database from '../../src/utils/database';
-import * as authModule from '../../src/middleware/auth';
+import { setupDatabaseMocks, setupAuthMocks, createTestApp, setupCommonMocks } from '../helpers/test-setup';
 
-// Mock the database client
-vi.mock('../../src/utils/database', () => ({
-  getDatabaseClient: () => ({
-    user: {
-      findUnique: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-    },
-    session: {
-      findUnique: vi.fn(),
-      create: vi.fn(),
-      delete: vi.fn(),
-      findMany: vi.fn(),
-    }
-  })
-}));
-
-// Mock the auth middleware and crypto UUID
-vi.mock('../../src/middleware/auth', () => ({
-  authenticateUser: vi.fn((c) => {
-    c.set('authenticatedUser', { id: 'test-user-id', email: 'test@example.com', role: 'USER' });
-    return c.next();
-  }),
-  requireRole: () => vi.fn((c) => c.next()),
-  getCurrentUser: vi.fn(() => ({ id: 'test-user-id', email: 'test@example.com', role: 'USER' })),
-}));
-
-// Mock crypto.randomUUID
-vi.spyOn(crypto, 'randomUUID').mockImplementation(() => 'mock-uuid-123');
-
-// Mock Date.now
-const originalDateNow = Date.now;
-Date.now = vi.fn(() => 1625097600000); // Fixed timestamp
+// Setup all mocks
+setupDatabaseMocks();
+setupAuthMocks();
+const { originalDateNow } = setupCommonMocks();
 
 describe('Auth Routes', () => {
   let app: Hono;
   let mockPrisma: any;
 
   beforeEach(() => {
-    app = new Hono();
-    app.route('/api/v1', authRoutes);
-    
-    // Get mock reference for assertions
-    mockPrisma = vi.mocked(database.getDatabaseClient(undefined as any));
+    const testSetup = createTestApp(authRoutes);
+    app = testSetup.app;
+    mockPrisma = testSetup.mockPrisma;
     
     // Clear all mocks before each test
     vi.clearAllMocks();

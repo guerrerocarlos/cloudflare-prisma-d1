@@ -12,7 +12,16 @@ export function createPrismaClient(database: D1Database): PrismaClient {
 // Database connection helper
 let prismaClient: PrismaClient | null = null;
 
-export function getDatabaseClient(database: D1Database): PrismaClient {
+export function getDatabaseClient(database?: D1Database): PrismaClient {
+  // For testing environments
+  if (process.env.NODE_ENV === 'test' && !database) {
+    return new PrismaClient();
+  }
+  
+  if (!database) {
+    throw new Error('Database instance is required but was not provided');
+  }
+  
   if (!prismaClient) {
     prismaClient = createPrismaClient(database);
   }

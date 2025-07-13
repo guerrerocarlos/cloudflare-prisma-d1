@@ -1,45 +1,22 @@
 // Unit tests for reaction routes
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Hono } from 'hono';
 import { reactionRoutes } from '../../src/routes/reactions';
-import * as database from '../../src/utils/database';
+import { setupDatabaseMocks, setupAuthMocks, createTestApp, setupCommonMocks } from '../helpers/test-setup';
 
-// Mock the database client
-vi.mock('../../src/utils/database', () => ({
-  getDatabaseClient: () => ({
-    reaction: {
-      findUnique: vi.fn(),
-      findMany: vi.fn(),
-      create: vi.fn(),
-      delete: vi.fn(),
-      findFirst: vi.fn(),
-    },
-    message: {
-      findUnique: vi.fn(),
-    }
-  })
-}));
-
-// Mock the auth middleware
-vi.mock('../../src/middleware/auth', () => ({
-  authenticateUser: vi.fn((c) => {
-    c.set('user', { id: 'test-user-id', email: 'test@example.com', role: 'USER' });
-    return c.next();
-  }),
-  requireRole: () => vi.fn((c) => c.next()),
-}));
+// Setup mocks
+setupDatabaseMocks();
+setupAuthMocks();
 
 describe('Reaction Routes', () => {
-  let app: Hono;
-  let mockPrisma: any;
+  let testContext: ReturnType<typeof createTestApp>;
 
   beforeEach(() => {
-    app = new Hono();
-    app.route('/api/v1', reactionRoutes);
+    // Setup common mocks (crypto, Date, etc.)
+    setupCommonMocks();
     
-    // Get mock reference for assertions
-    mockPrisma = vi.mocked(database.getDatabaseClient(undefined as any));
+    // Create a test app with the reaction routes
+    testContext = createTestApp(reactionRoutes);
     
     // Clear all mocks before each test
     vi.clearAllMocks();
@@ -73,10 +50,10 @@ describe('Reaction Routes', () => {
       ];
       
       // Mock message existence
-      mockPrisma.message.findUnique.mockResolvedValue({ id: messageId });
-      mockPrisma.reaction.findMany.mockResolvedValue(mockReactions);
+      testContext.mockPrisma.message.findUnique.mockResolvedValue({ id: messageId });
+      testContext.mockPrisma.reaction.findMany.mockResolvedValue(mockReactions);
       
-      const response = await app.request(`/api/v1/messages/${messageId}/reactions`);
+      const response = await testContext.app.request(`/api/v1/messages/${messageId}/reactions`);
       
       expect(response.status).toBe(200);
       const body = await response.json() as any;
