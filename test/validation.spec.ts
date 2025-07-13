@@ -111,11 +111,12 @@ describe('Validation Middleware', () => {
     });
 
     it('should fail validation with invalid query parameters', async () => {
-      app.get('/test', validateQuery(querySchema), (c) => {
+      const testApp = new Hono();
+      testApp.get('/test', validateQuery(querySchema), (c) => {
         return c.json({ success: true });
       });
 
-      const response = await app.request('/test?page=invalid');
+      const response = await testApp.request('/test?page=invalid');
 
       expect(response.status).toBe(400);
       const body = await response.json() as any;

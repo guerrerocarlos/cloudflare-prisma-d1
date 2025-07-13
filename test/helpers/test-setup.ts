@@ -2,6 +2,40 @@
 
 import { Hono } from 'hono';
 import { vi } from 'vitest';
+
+// Type helper for mock functions
+export interface MockPrismaFunction {
+  mockResolvedValue: (value: any) => MockPrismaFunction;
+  mockResolvedValueOnce: (value: any) => MockPrismaFunction;
+  mockRejectedValue: (value: any) => MockPrismaFunction;
+  mockRejectedValueOnce: (value: any) => MockPrismaFunction;
+  mockImplementation: (fn: (...args: any[]) => any) => MockPrismaFunction;
+  mockReturnValue: (value: any) => MockPrismaFunction;
+  (...args: any[]): Promise<any>;
+}
+
+// Create a mock function helper
+export const createPrismaMock = (): MockPrismaFunction => {
+  const fn = vi.fn() as any;
+  fn.mockResolvedValue = (value: any) => {
+    fn.mockImplementation(() => Promise.resolve(value));
+    return fn;
+  };
+  fn.mockResolvedValueOnce = (value: any) => {
+    fn.mockImplementationOnce(() => Promise.resolve(value));
+    return fn;
+  };
+  fn.mockRejectedValue = (value: any) => {
+    fn.mockImplementation(() => Promise.reject(value));
+    return fn;
+  };
+  fn.mockRejectedValueOnce = (value: any) => {
+    fn.mockImplementationOnce(() => Promise.reject(value));
+    return fn;
+  };
+  return fn;
+};
+
 import * as database from '../../src/utils/database';
 import * as authModule from '../../src/middleware/auth';
 
@@ -10,57 +44,57 @@ export function setupDatabaseMocks() {
   vi.mock('../../src/utils/database', () => ({
     getDatabaseClient: vi.fn().mockReturnValue({
       user: {
-        findUnique: vi.fn(),
-        create: vi.fn(),
-        update: vi.fn(),
-        findMany: vi.fn(),
-        count: vi.fn(),
-        delete: vi.fn(),
+        findUnique: createPrismaMock(),
+        create: createPrismaMock(),
+        update: createPrismaMock(),
+        findMany: createPrismaMock(),
+        count: createPrismaMock(),
+        delete: createPrismaMock(),
       },
       session: {
-        findUnique: vi.fn(),
-        create: vi.fn(),
-        delete: vi.fn(),
-        findMany: vi.fn(),
+        findUnique: createPrismaMock(),
+        create: createPrismaMock(),
+        delete: createPrismaMock(),
+        findMany: createPrismaMock(),
       },
       thread: {
-        findUnique: vi.fn(),
-        create: vi.fn(),
-        update: vi.fn(),
-        findMany: vi.fn(),
-        count: vi.fn(),
+        findUnique: createPrismaMock(),
+        create: createPrismaMock(),
+        update: createPrismaMock(),
+        findMany: createPrismaMock(),
+        count: createPrismaMock(),
       },
       message: {
-        findUnique: vi.fn(),
-        create: vi.fn(),
-        update: vi.fn(),
-        findMany: vi.fn(),
-        count: vi.fn(),
-        delete: vi.fn(),
+        findUnique: createPrismaMock(),
+        create: createPrismaMock(),
+        update: createPrismaMock(),
+        findMany: createPrismaMock(),
+        count: createPrismaMock(),
+        delete: createPrismaMock(),
       },
       artifact: {
-        findUnique: vi.fn(),
-        create: vi.fn(),
-        update: vi.fn(),
-        findMany: vi.fn(),
-        count: vi.fn(),
-        delete: vi.fn(),
+        findUnique: createPrismaMock(),
+        create: createPrismaMock(),
+        update: createPrismaMock(),
+        findMany: createPrismaMock(),
+        count: createPrismaMock(),
+        delete: createPrismaMock(),
       },
       file: {
-        findUnique: vi.fn(),
-        create: vi.fn(),
-        update: vi.fn(),
-        findMany: vi.fn(),
-        count: vi.fn(),
-        delete: vi.fn(),
+        findUnique: createPrismaMock(),
+        create: createPrismaMock(),
+        update: createPrismaMock(),
+        findMany: createPrismaMock(),
+        count: createPrismaMock(),
+        delete: createPrismaMock(),
       },
       reaction: {
-        findMany: vi.fn(),
-        create: vi.fn(),
-        delete: vi.fn(),
-        findUnique: vi.fn(),
-        deleteMany: vi.fn(),
-        count: vi.fn(),
+        findMany: createPrismaMock(),
+        create: createPrismaMock(),
+        delete: createPrismaMock(),
+        findUnique: createPrismaMock(),
+        deleteMany: createPrismaMock(),
+        count: createPrismaMock(),
       },
       $transaction: vi.fn(async (callback) => await callback())
     })
@@ -119,7 +153,11 @@ export function createTestApp(routes: any) {
   return {
     app,
     mockEnv,
-    mockPrisma: vi.mocked(database.getDatabaseClient(mockEnv.DB))
+    mockPrisma: database.getDatabaseClient(mockEnv.DB) as unknown as {
+      [K in keyof ReturnType<typeof database.getDatabaseClient>]: {
+        [M in keyof ReturnType<typeof database.getDatabaseClient>[K]]: MockPrismaFunction
+      }
+    }
   };
 }
 

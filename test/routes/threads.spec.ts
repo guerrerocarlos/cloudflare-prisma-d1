@@ -3,6 +3,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { threadRoutes } from '../../src/routes/threads';
 import { setupDatabaseMocks, setupAuthMocks, createTestApp, setupCommonMocks } from '../helpers/test-setup';
+import type { PrismaClient } from '@prisma/client';
 
 // Setup mocks
 setupDatabaseMocks();
@@ -17,6 +18,9 @@ describe('Thread Routes', () => {
     
     // Create a test app with the thread routes
     testContext = createTestApp(threadRoutes);
+    
+    // Cast mockPrisma to any to allow mocking
+    testContext.mockPrisma = testContext.mockPrisma as unknown as jest.Mocked<PrismaClient>;
     
     // Clear all mocks before each test
     vi.clearAllMocks();
