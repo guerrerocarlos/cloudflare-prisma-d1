@@ -40,6 +40,36 @@ export function validateBody<T>(schema: ZodSchema<T>) {
 export function validateQuery<T>(schema: ZodSchema<T>) {
   return async (c: Context, next: Next) => {
     try {
+      const query = c.req.query();
+      const validatedData = schema.parse(query);
+      c.set('validatedQuery', validatedData);
+      await next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const errors: Record<string, string[]> = {};
+        error.issues.forEach((issue) => {
+          const field = issue.path.join('.');
+          if (!errors[field]) errors[field] = [];
+          errors[field].push(issue.message);
+        });
+
+        return createErrorResponse({
+          status: 400,
+          title: 'Query Parameter Validation Error',
+          detail: 'The request query parameters contain invalid data',
+          errors
+        }, getCorrelationId(c.req.raw));
+      }
+
+      return createErrorResponse({
+        status: 400,
+        title: 'Bad Request',
+        detail: 'Invalid query parameter format'
+      }, getCorrelationId(c.req.raw));
+    }
+  };
+  return async (c: Context, next: Next) => {
+    try {
       const query = Object.fromEntries(
         new URL(c.req.url).searchParams.entries()
       );

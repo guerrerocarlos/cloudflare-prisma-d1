@@ -1,7 +1,6 @@
 // Common test setup utilities
-
-import { Hono } from 'hono';
 import { vi } from 'vitest';
+import { Hono } from 'hono';
 
 // Type helper for mock functions
 export interface MockPrismaFunction {
@@ -15,7 +14,7 @@ export interface MockPrismaFunction {
 }
 
 // Create a mock function helper
-export const createPrismaMock = (): MockPrismaFunction => {
+export function createPrismaMock(): MockPrismaFunction {
   const fn = vi.fn() as any;
   fn.mockResolvedValue = (value: any) => {
     fn.mockImplementation(() => Promise.resolve(value));
@@ -34,13 +33,19 @@ export const createPrismaMock = (): MockPrismaFunction => {
     return fn;
   };
   return fn;
-};
+}
 
+// Mock module imports before any other code
+vi.mock('../../src/utils/database');
+vi.mock('../../src/middleware/auth');
+
+// Import the mocked modules
 import * as database from '../../src/utils/database';
 import * as authModule from '../../src/middleware/auth';
 
 // Setup common database mocks
 export function setupDatabaseMocks() {
+  
   vi.mock('../../src/utils/database', () => ({
     getDatabaseClient: vi.fn().mockReturnValue({
       user: {
@@ -150,14 +155,18 @@ export function createTestApp(routes: any) {
   app.route('/api/v1', routes);
   
   // Return the app and the mock DB reference
+  // Using the exported createPrismaMock function
+  
+  type PrismaMock = {
+    [K in keyof ReturnType<typeof database.getDatabaseClient>]: {
+      [M in keyof ReturnType<typeof database.getDatabaseClient>[K]]: ReturnType<typeof createPrismaMock>
+    }
+  };
+  
   return {
     app,
     mockEnv,
-    mockPrisma: database.getDatabaseClient(mockEnv.DB) as unknown as {
-      [K in keyof ReturnType<typeof database.getDatabaseClient>]: {
-        [M in keyof ReturnType<typeof database.getDatabaseClient>[K]]: MockPrismaFunction
-      }
-    }
+    mockPrisma: database.getDatabaseClient(mockEnv.DB) as unknown as PrismaMock
   };
 }
 
