@@ -14,7 +14,7 @@ describe('Response Utils', () => {
       expect(response.headers.get('Content-Type')).toBe('application/json');
       expect(response.headers.get('X-Correlation-ID')).toBeTruthy();
       
-      const body = await response.json();
+      const body = await response.json() as any;
       expect(body).toMatchObject({
         success: true,
         data: data,
@@ -55,7 +55,7 @@ describe('Response Utils', () => {
       expect(response.headers.get('Content-Type')).toBe('application/problem+json');
       expect(response.headers.get('X-Correlation-ID')).toBe(correlationId);
       
-      const body = await response.json();
+      const body = await response.json() as any;
       expect(body).toMatchObject({
         success: false,
         error: {
@@ -78,7 +78,7 @@ describe('Response Utils', () => {
       };
       
       const response = createErrorResponse(error, 'test-id');
-      const body = await response.json();
+      const body = await response.json() as any;
       
       expect(body.error.errors).toEqual({
         email: ['Required field']
@@ -96,7 +96,7 @@ describe('Response Utils', () => {
       };
       
       const response = createPaginatedResponse(items, pagination);
-      const body = await response.json();
+      const body = await response.json() as any;
       
       expect(body).toMatchObject({
         success: true,
@@ -117,7 +117,7 @@ describe('Response Utils', () => {
       };
       
       const response = createPaginatedResponse(items, pagination);
-      const body = await response.json();
+      const body = await response.json() as any;
       
       expect(body.data).toMatchObject({
         items: items,
