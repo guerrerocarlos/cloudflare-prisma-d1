@@ -211,7 +211,10 @@ export const listUsersRoute = createRoute({
   request: {
     query: z.object({
       limit: safeOpenApi(
-        z.string().transform(Number).pipe(z.number().min(1).max(100)).optional(),
+        z.string()
+          .transform(Number)
+          .pipe(z.number().min(1).max(100))
+          .optional(),
         {
           description: 'Maximum number of users to return (1-100)',
           example: '25'
