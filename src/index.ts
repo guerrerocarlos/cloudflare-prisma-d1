@@ -15,6 +15,9 @@ import { fileRoutes } from './routes/files';
 import { reactionRoutes } from './routes/reactions';
 import { authRoutes } from './routes/auth';
 
+// OpenAPI documentation routes
+import { api as openApiApp } from './openapi/index';
+
 export interface Env {
   DB: D1Database;
 }
@@ -31,26 +34,6 @@ app.use('*', cors({
   maxAge: 86400,
   credentials: true
 }));
-
-// Health check endpoint
-app.get('/health', (c) => {
-  return createSuccessResponse({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: '2.0.0',
-    environment: 'development' // TODO: Make this dynamic
-  });
-});
-
-// API v1 health check
-app.get('/api/v1/health', (c) => {
-  return createSuccessResponse({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: '2.0.0',
-    environment: 'development' // TODO: Make this dynamic
-  });
-});
 
 // API version info
 app.get('/api/v1', (c) => {
@@ -70,6 +53,16 @@ app.get('/api/v1', (c) => {
   });
 });
 
+// Simple health check endpoint (non-OpenAPI)
+app.get('/health', (c) => {
+  return createSuccessResponse({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    version: '2.0.0',
+    environment: 'development' // TODO: Make this dynamic
+  });
+});
+
 // Mount route modules
 app.route('/api/v1', userRoutes);
 app.route('/api/v1', threadRoutes);
@@ -78,6 +71,9 @@ app.route('/api/v1', artifactRoutes);
 app.route('/api/v1', fileRoutes);
 app.route('/api/v1', reactionRoutes);
 app.route('/api/v1', authRoutes);
+
+// Mount OpenAPI documentation app
+app.route('/', openApiApp);
 
 // Legacy endpoints for backward compatibility
 app.get('/users', async (c) => {
