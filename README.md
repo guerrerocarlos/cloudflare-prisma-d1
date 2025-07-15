@@ -554,8 +554,278 @@ Each phase must meet the following criteria before proceeding:
 - **Staging**: Deployed to Cloudflare Workers with staging D1
 - **Production**: Blue-green deployment with health checks
 
-## 📚 Additional Documentation
+## �️ Database Schema Management
 
+### Modifying the Database Schema
+
+This project uses **Prisma ORM** with **Cloudflare D1** (SQLite) for data persistence. All schema changes are managed through the `prisma/schema.prisma` file.
+
+#### 1. Understanding the Schema File
+
+The schema file defines:
+- **Models**: Database tables (User, Thread, Message, etc.)
+- **Relationships**: Foreign keys and associations between models
+- **Enums**: Controlled vocabularies (UserRole, MessageType, etc.)
+- **Indexes**: Performance optimizations
+- **Constraints**: Data integrity rules
+
+```prisma
+// Example model definition
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  role        UserRole @default(USER)
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  threads     Thread[]
+  messages    Message[]
+  
+  @@map("users")
+}
+```
+
+#### 2. Making Schema Changes
+
+**Common Schema Modifications:**
+
+1. **Adding a new field to an existing model:**
+```prisma
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  // Add new field
+  phoneNumber String?  // Optional field
+  timezone    String   @default("UTC") // Required field with default
+  
+  @@map("users")
+}
+```
+
+2. **Creating a new model:**
+```prisma
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  // Foreign key relationship
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notifications")
+}
+
+// Don't forget to add the relationship to the User model
+model User {
+  // ... existing fields
+  notifications Notification[]
+}
+```
+
+3. **Adding an enum:**
+```prisma
+enum NotificationType {
+  MESSAGE
+  MENTION
+  SYSTEM
+  
+  @@map("notification_types")
+}
+
+model Notification {
+  // ... other fields
+  type NotificationType @default(MESSAGE)
+}
+```
+
+4. **Adding indexes for performance:**
+```prisma
+model Message {
+  // ... fields
+  
+  @@index([threadId, createdAt])  // Composite index
+  @@index([authorId])             // Single field index
+}
+```
+
+#### 3. Applying Schema Changes
+
+**Step-by-step workflow:**
+
+1. **Edit the schema file:**
+```bash
+# Open the schema file in your editor
+code prisma/schema.prisma
+```
+
+2. **Generate Prisma client** (updates TypeScript types):
+```bash
+npm run db:generate
+```
+
+3. **Create migration files** (generates SQL):
+```bash
+npm run db:migrate:create
+```
+
+4. **Apply migrations locally** (updates local database):
+```bash
+npm run db:migrate:apply:local
+```
+
+5. **Test your changes:**
+```bash
+npm run dev
+npm test
+```
+
+6. **Apply to production** (when ready):
+```bash
+npm run db:migrate:apply:remote
+```
+
+#### 4. Migration Workflow Examples
+
+**Example: Adding a user profile picture field**
+
+1. **Update schema:**
+```prisma
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  avatarUrl   String?  // <- Add this line
+  // ... rest of fields
+}
+```
+
+2. **Apply changes:**
+```bash
+npm run db:generate                    # Update TypeScript types
+npm run db:migrate:create              # Create migration file
+npm run db:migrate:apply:local         # Apply to local DB
+npm run dev                            # Test locally
+npm run db:migrate:apply:remote        # Deploy to production
+```
+
+**Example: Creating a new notification system**
+
+1. **Add to schema:**
+```prisma
+enum NotificationType {
+  MESSAGE
+  MENTION
+  SYSTEM
+  
+  @@map("notification_types")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType @default(MESSAGE)
+  isRead    Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model User {
+  // ... existing fields
+  notifications Notification[]
+}
+```
+
+2. **Apply changes:**
+```bash
+npm run db:generate && npm run db:migrate:create && npm run db:migrate:apply:local
+```
+
+#### 5. Best Practices
+
+**Schema Design:**
+- Use descriptive field names (`createdAt` not `created`)
+- Always add `@@map("table_name")` for consistent table naming
+- Use enums for controlled vocabularies
+- Add indexes for frequently queried fields
+- Use `onDelete: Cascade` for dependent relationships
+
+**Migration Safety:**
+- Always test migrations locally first
+- Back up production data before major changes:
+  ```bash
+  npm run db:backup:create
+  npm run db:export:remote
+  ```
+- Use optional fields (`String?`) when adding new columns to existing tables
+- Consider data migration scripts for complex changes
+
+**Development Workflow:**
+- Make small, incremental changes
+- Test each change thoroughly
+- Use descriptive commit messages for schema changes
+- Document breaking changes in migration comments
+
+#### 6. Troubleshooting
+
+**Common Issues:**
+
+1. **Migration conflicts:**
+```bash
+npm run db:migrate:status              # Check migration status
+npm run db:fresh:local                 # Reset local DB if needed
+```
+
+2. **Type errors after schema changes:**
+```bash
+npm run db:generate                    # Regenerate Prisma client
+```
+
+3. **Production migration failures:**
+```bash
+npm run db:backup:restore              # Restore from backup if needed
+npm run db:migrate:status              # Check what went wrong
+```
+
+#### 7. Database Scripts Reference
+
+**Quick Commands:**
+```bash
+# Development workflow
+npm run setup                          # Full setup (first time)
+npm run db:fresh:local                 # Clean slate for development
+npm run db:tables:local                # See current schema
+
+# Schema changes
+npm run db:generate                    # After editing schema.prisma
+npm run db:migrate:create              # Generate migration files
+npm run db:migrate:apply:local         # Apply to local database
+
+# Production deployment
+npm run db:migrate:apply:remote        # Deploy schema changes
+npm run db:backup:create               # Create backup first
+
+# Inspection and debugging
+npm run db:info                        # Database information
+npm run db:migrate:status              # Migration status
+npm run db:query:local "SELECT ..."    # Execute SQL queries
+```
+
+For more detailed database management options, see: **[DATABASE_SCRIPTS.md](./DATABASE_SCRIPTS.md)**
+
+## �📚 Additional Documentation
+
+- **[Database Management Scripts](./DATABASE_SCRIPTS.md)**: Comprehensive guide to all database management commands and workflows
 - **[Authentication Integration Guide](./AUTHENTICATION_INTEGRATION.md)**: Comprehensive guide to JWT authentication implementation
 - **[Phase 1 Summary](./PHASE1_SUMMARY.md)**: Database schema and core models implementation
 - **[Project Overview](./OVERVIEW.md)**: High-level project architecture and goals
