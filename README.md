@@ -224,7 +224,7 @@ Errors follow RFC 7807 Problem Details format:
 {
   "success": false,
   "error": {
-    "type": "https://api.rpotential.dev/problems/validation-error",
+    "type": "https://experience.rpotential.dev/problems/validation-error",
     "title": "Validation Error",
     "status": 400,
     "detail": "The request contains invalid parameters",

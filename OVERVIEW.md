@@ -1868,9 +1868,9 @@ info:
   license:
     name: Proprietary
 servers:
-  - url: https://api.rpotential.dev
+  - url: https://experience.rpotential.dev
     description: Production server
-  - url: https://staging-api.rpotential.dev
+  - url: https://dev-experience.rpotential.dev
     description: Staging server
 ```
 

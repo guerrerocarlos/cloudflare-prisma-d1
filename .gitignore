@@ -172,3 +172,8 @@ dist
 .wrangler/
 
 /src/generated/prisma
+
+# Database backups and exports
+backups/
+*.sql.backup
+*.db.backup

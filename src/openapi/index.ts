@@ -26,12 +26,12 @@ const openApiDocument = {
   },
   servers: [
     {
-      url: 'https://api.rpotential.dev',
-      description: 'Production server'
+      url: 'https://dev-experience.rpotential.dev',
+      description: 'Development server'
     },
     {
-      url: 'https://dev-api.rpotential.dev',
-      description: 'Development server'
+      url: 'https://experience.rpotential.dev',
+      description: 'Production server'
     },
     {
       url: 'http://localhost:8787',
@@ -1375,7 +1375,7 @@ const openApiDocument = {
                   type: 'object',
                   properties: {
                     success: { type: 'boolean', example: true },
-                    data: { 
+                    data: {
                       oneOf: [
                         { '$ref': '#/components/schemas/Reaction' },
                         { '$ref': '#/components/schemas/RemovedReaction' }
@@ -1397,518 +1397,518 @@ const openApiDocument = {
   },
   components: {
     schemas: {
-        User: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
-            email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
-            name: { type: 'string', description: 'User full name', example: 'John Doe' },
-            nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
-            role: { type: 'string', enum: ['USER', 'ADMIN'], description: 'User role', example: 'USER' },
-            avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' },
-            createdAt: { type: 'string', format: 'date-time', description: 'User creation timestamp', example: '2025-07-14T12:00:00Z' },
-            updatedAt: { type: 'string', format: 'date-time', description: 'User last updated timestamp', example: '2025-07-14T12:30:00Z' },
-            lastLoginAt: { type: 'string', format: 'date-time', description: 'User last login timestamp', example: '2025-07-14T11:00:00Z' }
-          },
-          required: ['id', 'email', 'role', 'createdAt', 'updatedAt']
+      User: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+          email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+          name: { type: 'string', description: 'User full name', example: 'John Doe' },
+          nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+          role: { type: 'string', enum: ['USER', 'ADMIN'], description: 'User role', example: 'USER' },
+          avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' },
+          createdAt: { type: 'string', format: 'date-time', description: 'User creation timestamp', example: '2025-07-14T12:00:00Z' },
+          updatedAt: { type: 'string', format: 'date-time', description: 'User last updated timestamp', example: '2025-07-14T12:30:00Z' },
+          lastLoginAt: { type: 'string', format: 'date-time', description: 'User last login timestamp', example: '2025-07-14T11:00:00Z' }
         },
-        CreateUserRequest: {
-          type: 'object',
-          properties: {
-            email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
-            name: { type: 'string', minLength: 1, maxLength: 100, description: 'User full name', example: 'John Doe' },
-            nick: { type: 'string', minLength: 1, maxLength: 50, description: 'User nickname/display name', example: 'johndoe' },
-            role: { type: 'string', enum: ['USER', 'ADMIN'], description: 'User role (defaults to USER)', example: 'USER' },
-            googleId: { type: 'string', description: 'Google OAuth ID', example: '123456789012345678901' },
-            avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
-          },
-          required: ['email']
+        required: ['id', 'email', 'role', 'createdAt', 'updatedAt']
+      },
+      CreateUserRequest: {
+        type: 'object',
+        properties: {
+          email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+          name: { type: 'string', minLength: 1, maxLength: 100, description: 'User full name', example: 'John Doe' },
+          nick: { type: 'string', minLength: 1, maxLength: 50, description: 'User nickname/display name', example: 'johndoe' },
+          role: { type: 'string', enum: ['USER', 'ADMIN'], description: 'User role (defaults to USER)', example: 'USER' },
+          googleId: { type: 'string', description: 'Google OAuth ID', example: '123456789012345678901' },
+          avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
         },
-        UpdateUserRequest: {
-          type: 'object',
-          properties: {
-            name: { type: 'string', minLength: 1, maxLength: 100, description: 'User full name', example: 'John Doe' },
-            nick: { type: 'string', minLength: 1, maxLength: 50, description: 'User nickname/display name', example: 'johndoe' },
-            role: { type: 'string', enum: ['USER', 'ADMIN'], description: 'User role', example: 'USER' },
-            avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+        required: ['email']
+      },
+      UpdateUserRequest: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', minLength: 1, maxLength: 100, description: 'User full name', example: 'John Doe' },
+          nick: { type: 'string', minLength: 1, maxLength: 50, description: 'User nickname/display name', example: 'johndoe' },
+          role: { type: 'string', enum: ['USER', 'ADMIN'], description: 'User role', example: 'USER' },
+          avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+        }
+      },
+      Thread: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Thread ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a2' },
+          title: { type: 'string', description: 'Thread title', example: 'Discussion about AI ethics' },
+          status: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'], description: 'Thread status', example: 'ACTIVE' },
+          createdAt: { type: 'string', format: 'date-time', description: 'Thread creation timestamp', example: '2025-07-15T10:30:00Z' },
+          updatedAt: { type: 'string', format: 'date-time', description: 'Thread last update timestamp', example: '2025-07-15T10:30:00Z' },
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional thread metadata', example: { tags: ['ai', 'ethics'], priority: 'high' } },
+          user: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+              email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+              name: { type: 'string', description: 'User full name', example: 'John Doe' },
+              nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+              avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+            },
+            required: ['id', 'email']
           }
         },
-        Thread: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'Thread ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a2' },
-            title: { type: 'string', description: 'Thread title', example: 'Discussion about AI ethics' },
-            status: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'], description: 'Thread status', example: 'ACTIVE' },
-            createdAt: { type: 'string', format: 'date-time', description: 'Thread creation timestamp', example: '2025-07-15T10:30:00Z' },
-            updatedAt: { type: 'string', format: 'date-time', description: 'Thread last update timestamp', example: '2025-07-15T10:30:00Z' },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional thread metadata', example: { tags: ['ai', 'ethics'], priority: 'high' } },
-            user: {
+        required: ['id', 'status', 'createdAt', 'updatedAt', 'user']
+      },
+      CreateThreadRequest: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', minLength: 1, maxLength: 200, description: 'Thread title', example: 'Discussion about AI ethics' },
+          description: { type: 'string', maxLength: 1000, description: 'Thread description', example: 'A detailed discussion about the ethical implications of AI' },
+          userId: { type: 'string', description: 'ID of the user creating the thread', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional thread metadata', example: { tags: ['ai', 'ethics'], priority: 'high' } }
+        },
+        required: ['userId']
+      },
+      UpdateThreadRequest: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', minLength: 1, maxLength: 200, description: 'Thread title', example: 'Updated discussion about AI ethics' },
+          status: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'], description: 'Thread status', example: 'ACTIVE' },
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional thread metadata', example: { tags: ['ai', 'ethics'], priority: 'medium' } }
+        }
+      },
+      Message: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Message ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a3' },
+          threadId: { type: 'string', description: 'Thread ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a2' },
+          role: { type: 'string', enum: ['USER', 'ASSISTANT', 'SYSTEM'], description: 'Message role', example: 'USER' },
+          content: { type: 'string', description: 'Message content', example: 'What are the key ethical considerations when developing AI systems?' },
+          blocks: {
+            type: 'array',
+            items: { type: 'object', additionalProperties: true },
+            description: 'Structured content blocks',
+            example: [{ type: 'text', text: 'Hello world' }, { type: 'image', url: 'https://example.com/image.jpg' }]
+          },
+          createdAt: { type: 'string', format: 'date-time', description: 'Message creation timestamp', example: '2025-07-15T10:35:00Z' },
+          updatedAt: { type: 'string', format: 'date-time', description: 'Message last update timestamp', example: '2025-07-15T10:35:00Z' },
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional message metadata', example: { confidence: 0.95, model: 'gpt-4' } },
+          user: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+              email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+              name: { type: 'string', description: 'User full name', example: 'John Doe' },
+              nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+              avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+            },
+            description: 'User who created the message (only for USER role messages)'
+          },
+          files: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
-                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
-                name: { type: 'string', description: 'User full name', example: 'John Doe' },
-                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
-                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+                id: { type: 'string', description: 'File ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a4' },
+                filename: { type: 'string', description: 'Original filename', example: 'document.pdf' },
+                title: { type: 'string', description: 'File title/description', example: 'AI Ethics Research Paper' },
+                mimeType: { type: 'string', description: 'File MIME type', example: 'application/pdf' },
+                size: { type: 'number', description: 'File size in bytes', example: 1024000 },
+                url: { type: 'string', format: 'url', description: 'File download URL', example: 'https://storage.example.com/files/document.pdf' }
               },
-              required: ['id', 'email']
-            }
-          },
-          required: ['id', 'status', 'createdAt', 'updatedAt', 'user']
-        },
-        CreateThreadRequest: {
-          type: 'object',
-          properties: {
-            title: { type: 'string', minLength: 1, maxLength: 200, description: 'Thread title', example: 'Discussion about AI ethics' },
-            description: { type: 'string', maxLength: 1000, description: 'Thread description', example: 'A detailed discussion about the ethical implications of AI' },
-            userId: { type: 'string', description: 'ID of the user creating the thread', example: 'ck9x8v7b600034l5r8jlkf0a1' },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional thread metadata', example: { tags: ['ai', 'ethics'], priority: 'high' } }
-          },
-          required: ['userId']
-        },
-        UpdateThreadRequest: {
-          type: 'object',
-          properties: {
-            title: { type: 'string', minLength: 1, maxLength: 200, description: 'Thread title', example: 'Updated discussion about AI ethics' },
-            status: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'], description: 'Thread status', example: 'ACTIVE' },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional thread metadata', example: { tags: ['ai', 'ethics'], priority: 'medium' } }
+              required: ['id', 'filename', 'title']
+            },
+            description: 'Attached files'
           }
         },
-        Message: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'Message ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a3' },
-            threadId: { type: 'string', description: 'Thread ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a2' },
-            role: { type: 'string', enum: ['USER', 'ASSISTANT', 'SYSTEM'], description: 'Message role', example: 'USER' },
-            content: { type: 'string', description: 'Message content', example: 'What are the key ethical considerations when developing AI systems?' },
-            blocks: {
-              type: 'array',
-              items: { type: 'object', additionalProperties: true },
-              description: 'Structured content blocks',
-              example: [{ type: 'text', text: 'Hello world' }, { type: 'image', url: 'https://example.com/image.jpg' }]
-            },
-            createdAt: { type: 'string', format: 'date-time', description: 'Message creation timestamp', example: '2025-07-15T10:35:00Z' },
-            updatedAt: { type: 'string', format: 'date-time', description: 'Message last update timestamp', example: '2025-07-15T10:35:00Z' },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional message metadata', example: { confidence: 0.95, model: 'gpt-4' } },
-            user: {
+        required: ['id', 'threadId', 'role', 'content', 'createdAt', 'updatedAt']
+      },
+      CreateMessageRequest: {
+        type: 'object',
+        properties: {
+          role: { type: 'string', enum: ['USER', 'ASSISTANT', 'SYSTEM'], description: 'Message role', example: 'USER' },
+          content: { type: 'string', minLength: 1, maxLength: 50000, description: 'Message content', example: 'What are the key ethical considerations when developing AI systems?' },
+          userId: { type: 'string', description: 'ID of the user creating the message (required for USER role)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+          blocks: {
+            type: 'array',
+            items: { type: 'object', additionalProperties: true },
+            description: 'Structured content blocks',
+            example: [{ type: 'text', text: 'Hello world' }]
+          },
+          attachments: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
-                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
-                name: { type: 'string', description: 'User full name', example: 'John Doe' },
-                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
-                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+                file_id: { type: 'string', description: 'File ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a4' },
+                title: { type: 'string', minLength: 1, maxLength: 255, description: 'File title/description', example: 'AI Ethics Research Paper' }
               },
-              description: 'User who created the message (only for USER role messages)'
+              required: ['file_id', 'title']
             },
-            files: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string', description: 'File ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a4' },
-                  filename: { type: 'string', description: 'Original filename', example: 'document.pdf' },
-                  title: { type: 'string', description: 'File title/description', example: 'AI Ethics Research Paper' },
-                  mimeType: { type: 'string', description: 'File MIME type', example: 'application/pdf' },
-                  size: { type: 'number', description: 'File size in bytes', example: 1024000 },
-                  url: { type: 'string', format: 'url', description: 'File download URL', example: 'https://storage.example.com/files/document.pdf' }
-                },
-                required: ['id', 'filename', 'title']
-              },
-              description: 'Attached files'
-            }
+            description: 'File attachments'
           },
-          required: ['id', 'threadId', 'role', 'content', 'createdAt', 'updatedAt']
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional message metadata', example: { priority: 'high' } }
         },
-        CreateMessageRequest: {
-          type: 'object',
-          properties: {
-            role: { type: 'string', enum: ['USER', 'ASSISTANT', 'SYSTEM'], description: 'Message role', example: 'USER' },
-            content: { type: 'string', minLength: 1, maxLength: 50000, description: 'Message content', example: 'What are the key ethical considerations when developing AI systems?' },
-            userId: { type: 'string', description: 'ID of the user creating the message (required for USER role)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
-            blocks: {
-              type: 'array',
-              items: { type: 'object', additionalProperties: true },
-              description: 'Structured content blocks',
-              example: [{ type: 'text', text: 'Hello world' }]
-            },
-            attachments: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  file_id: { type: 'string', description: 'File ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a4' },
-                  title: { type: 'string', minLength: 1, maxLength: 255, description: 'File title/description', example: 'AI Ethics Research Paper' }
-                },
-                required: ['file_id', 'title']
-              },
-              description: 'File attachments'
-            },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional message metadata', example: { priority: 'high' } }
+        required: ['role', 'content']
+      },
+      UpdateMessageRequest: {
+        type: 'object',
+        properties: {
+          content: { type: 'string', minLength: 1, maxLength: 50000, description: 'Message content', example: 'Updated: What are the key ethical considerations when developing AI systems?' },
+          blocks: {
+            type: 'array',
+            items: { type: 'object', additionalProperties: true },
+            description: 'Structured content blocks',
+            example: [{ type: 'text', text: 'Updated content' }]
           },
-          required: ['role', 'content']
-        },
-        UpdateMessageRequest: {
-          type: 'object',
-          properties: {
-            content: { type: 'string', minLength: 1, maxLength: 50000, description: 'Message content', example: 'Updated: What are the key ethical considerations when developing AI systems?' },
-            blocks: {
-              type: 'array',
-              items: { type: 'object', additionalProperties: true },
-              description: 'Structured content blocks',
-              example: [{ type: 'text', text: 'Updated content' }]
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional message metadata', example: { edited: true, editReason: 'Fixed typo' } }
+        }
+      },
+      Artifact: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Artifact ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a5' },
+          type: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'], description: 'Artifact type', example: 'INSIGHT' },
+          title: { type: 'string', description: 'Artifact title', example: 'AI Market Analysis Report' },
+          description: { type: 'string', description: 'Artifact description', example: 'Comprehensive analysis of AI market trends and opportunities' },
+          content: { type: 'string', description: 'Artifact content (fallback text)', example: 'This report analyzes the current AI market trends...' },
+          blocks: {
+            type: 'array',
+            items: { type: 'object', additionalProperties: true },
+            description: 'Rich UI blocks as JSON',
+            example: [{ type: 'text', text: 'Market Overview' }, { type: 'chart', data: { labels: ['Q1', 'Q2'], values: [100, 150] } }]
+          },
+          version: { type: 'number', description: 'Artifact version number', example: 1 },
+          createdAt: { type: 'string', format: 'date-time', description: 'Artifact creation timestamp', example: '2025-07-15T14:30:00Z' },
+          updatedAt: { type: 'string', format: 'date-time', description: 'Artifact last update timestamp', example: '2025-07-15T14:30:00Z' },
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market'], format: 'pdf' } },
+          thread: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'Thread ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a2' },
+              title: { type: 'string', description: 'Thread title', example: 'AI Market Research Discussion' },
+              status: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'], description: 'Thread status', example: 'ACTIVE' }
             },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional message metadata', example: { edited: true, editReason: 'Fixed typo' } }
+            description: 'Associated thread information'
+          },
+          user: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+              email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+              name: { type: 'string', description: 'User full name', example: 'John Doe' },
+              nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+              avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+            },
+            required: ['id', 'email'],
+            description: 'User who created the artifact'
           }
         },
-        Artifact: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'Artifact ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a5' },
-            type: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'], description: 'Artifact type', example: 'INSIGHT' },
-            title: { type: 'string', description: 'Artifact title', example: 'AI Market Analysis Report' },
-            description: { type: 'string', description: 'Artifact description', example: 'Comprehensive analysis of AI market trends and opportunities' },
-            content: { type: 'string', description: 'Artifact content (fallback text)', example: 'This report analyzes the current AI market trends...' },
-            blocks: { 
-              type: 'array', 
-              items: { type: 'object', additionalProperties: true },
-              description: 'Rich UI blocks as JSON',
-              example: [{ type: 'text', text: 'Market Overview' }, { type: 'chart', data: { labels: ['Q1', 'Q2'], values: [100, 150] } }]
-            },
-            version: { type: 'number', description: 'Artifact version number', example: 1 },
-            createdAt: { type: 'string', format: 'date-time', description: 'Artifact creation timestamp', example: '2025-07-15T14:30:00Z' },
-            updatedAt: { type: 'string', format: 'date-time', description: 'Artifact last update timestamp', example: '2025-07-15T14:30:00Z' },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market'], format: 'pdf' } },
-            thread: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', description: 'Thread ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a2' },
-                title: { type: 'string', description: 'Thread title', example: 'AI Market Research Discussion' },
-                status: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'], description: 'Thread status', example: 'ACTIVE' }
-              },
-              description: 'Associated thread information'
-            },
-            user: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
-                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
-                name: { type: 'string', description: 'User full name', example: 'John Doe' },
-                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
-                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
-              },
-              required: ['id', 'email'],
-              description: 'User who created the artifact'
-            }
+        required: ['id', 'type', 'title', 'content', 'version', 'createdAt', 'updatedAt', 'user']
+      },
+      ArtifactDetailed: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Artifact ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a5' },
+          type: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'], description: 'Artifact type', example: 'INSIGHT' },
+          title: { type: 'string', description: 'Artifact title', example: 'AI Market Analysis Report' },
+          description: { type: 'string', description: 'Artifact description', example: 'Comprehensive analysis of AI market trends and opportunities' },
+          content: { type: 'string', description: 'Artifact content (fallback text)', example: 'This report analyzes the current AI market trends...' },
+          blocks: {
+            type: 'array',
+            items: { type: 'object', additionalProperties: true },
+            description: 'Rich UI blocks as JSON',
+            example: [{ type: 'text', text: 'Market Overview' }, { type: 'chart', data: { labels: ['Q1', 'Q2'], values: [100, 150] } }]
           },
-          required: ['id', 'type', 'title', 'content', 'version', 'createdAt', 'updatedAt', 'user']
-        },
-        ArtifactDetailed: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'Artifact ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a5' },
-            type: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'], description: 'Artifact type', example: 'INSIGHT' },
-            title: { type: 'string', description: 'Artifact title', example: 'AI Market Analysis Report' },
-            description: { type: 'string', description: 'Artifact description', example: 'Comprehensive analysis of AI market trends and opportunities' },
-            content: { type: 'string', description: 'Artifact content (fallback text)', example: 'This report analyzes the current AI market trends...' },
-            blocks: { 
-              type: 'array', 
-              items: { type: 'object', additionalProperties: true },
-              description: 'Rich UI blocks as JSON',
-              example: [{ type: 'text', text: 'Market Overview' }, { type: 'chart', data: { labels: ['Q1', 'Q2'], values: [100, 150] } }]
+          version: { type: 'number', description: 'Artifact version number', example: 1 },
+          createdAt: { type: 'string', format: 'date-time', description: 'Artifact creation timestamp', example: '2025-07-15T14:30:00Z' },
+          updatedAt: { type: 'string', format: 'date-time', description: 'Artifact last update timestamp', example: '2025-07-15T14:30:00Z' },
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market'], format: 'pdf' } },
+          thread: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'Thread ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a2' },
+              title: { type: 'string', description: 'Thread title', example: 'AI Market Research Discussion' },
+              status: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'], description: 'Thread status', example: 'ACTIVE' }
             },
-            version: { type: 'number', description: 'Artifact version number', example: 1 },
-            createdAt: { type: 'string', format: 'date-time', description: 'Artifact creation timestamp', example: '2025-07-15T14:30:00Z' },
-            updatedAt: { type: 'string', format: 'date-time', description: 'Artifact last update timestamp', example: '2025-07-15T14:30:00Z' },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market'], format: 'pdf' } },
-            thread: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', description: 'Thread ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a2' },
-                title: { type: 'string', description: 'Thread title', example: 'AI Market Research Discussion' },
-                status: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'], description: 'Thread status', example: 'ACTIVE' }
-              },
-              description: 'Associated thread information'
-            },
-            user: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
-                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
-                name: { type: 'string', description: 'User full name', example: 'John Doe' },
-                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
-                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
-              },
-              required: ['id', 'email'],
-              description: 'User who created the artifact'
-            }
+            description: 'Associated thread information'
           },
-          required: ['id', 'type', 'title', 'content', 'version', 'createdAt', 'updatedAt', 'user']
-        },
-        CreateArtifactRequest: {
-          type: 'object',
-          properties: {
-            type: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'], description: 'Artifact type', example: 'INSIGHT' },
-            title: { type: 'string', minLength: 1, maxLength: 200, description: 'Artifact title', example: 'AI Market Analysis Report' },
-            description: { type: 'string', maxLength: 1000, description: 'Artifact description', example: 'Comprehensive analysis of AI market trends and opportunities' },
-            content: { type: 'string', minLength: 1, description: 'Artifact content (fallback text)', example: 'This report analyzes the current AI market trends...' },
-            blocks: { 
-              type: 'array', 
-              items: { type: 'object', additionalProperties: true },
-              description: 'Rich UI blocks as JSON',
-              example: [{ type: 'text', text: 'Market Overview' }, { type: 'chart', data: { labels: ['Q1', 'Q2'], values: [100, 150] } }]
+          user: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+              email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+              name: { type: 'string', description: 'User full name', example: 'John Doe' },
+              nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+              avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
             },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market'], format: 'pdf' } }
-          },
-          required: ['type', 'title', 'content']
-        },
-        UpdateArtifactRequest: {
-          type: 'object',
-          properties: {
-            title: { type: 'string', minLength: 1, maxLength: 200, description: 'Artifact title', example: 'Updated AI Market Analysis Report' },
-            description: { type: 'string', maxLength: 1000, description: 'Artifact description', example: 'Updated comprehensive analysis of AI market trends' },
-            content: { type: 'string', minLength: 1, description: 'Artifact content (fallback text)', example: 'This updated report analyzes...' },
-            blocks: { 
-              type: 'array', 
-              items: { type: 'object', additionalProperties: true },
-              description: 'Rich UI blocks as JSON',
-              example: [{ type: 'text', text: 'Updated Market Overview' }, { type: 'chart', data: { labels: ['Q1', 'Q2'], values: [120, 180] } }]
-            },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market', 'updated'], format: 'pdf' } }
+            required: ['id', 'email'],
+            description: 'User who created the artifact'
           }
         },
-        File: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'File ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a6' },
-            filename: { type: 'string', description: 'Stored filename', example: 'document_20250715_143000.pdf' },
-            originalName: { type: 'string', description: 'Original filename as uploaded', example: 'AI Research Paper.pdf' },
-            mimeType: { type: 'string', description: 'File MIME type', example: 'application/pdf' },
-            size: { type: 'number', description: 'File size in bytes', example: 2048576 },
-            checksum: { type: 'string', description: 'File checksum for integrity verification', example: 'sha256:abc123def456...' },
-            storageUrl: { type: 'string', format: 'url', description: 'File storage URL', example: 'https://storage.example.com/files/document_20250715_143000.pdf' },
-            previewUrl: { type: 'string', format: 'url', description: 'File preview URL (if available)', example: 'https://storage.example.com/previews/document_20250715_143000.jpg' },
-            createdAt: { type: 'string', format: 'date-time', description: 'File upload timestamp', example: '2025-07-15T14:30:00Z' },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional file metadata', example: { tags: ['research', 'ai'], processed: true } },
-            uploader: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
-                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
-                name: { type: 'string', description: 'User full name', example: 'John Doe' },
-                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
-                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
-              },
-              required: ['id', 'email'],
-              description: 'User who uploaded the file'
-            }
+        required: ['id', 'type', 'title', 'content', 'version', 'createdAt', 'updatedAt', 'user']
+      },
+      CreateArtifactRequest: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'], description: 'Artifact type', example: 'INSIGHT' },
+          title: { type: 'string', minLength: 1, maxLength: 200, description: 'Artifact title', example: 'AI Market Analysis Report' },
+          description: { type: 'string', maxLength: 1000, description: 'Artifact description', example: 'Comprehensive analysis of AI market trends and opportunities' },
+          content: { type: 'string', minLength: 1, description: 'Artifact content (fallback text)', example: 'This report analyzes the current AI market trends...' },
+          blocks: {
+            type: 'array',
+            items: { type: 'object', additionalProperties: true },
+            description: 'Rich UI blocks as JSON',
+            example: [{ type: 'text', text: 'Market Overview' }, { type: 'chart', data: { labels: ['Q1', 'Q2'], values: [100, 150] } }]
           },
-          required: ['id', 'filename', 'originalName', 'mimeType', 'size', 'storageUrl', 'createdAt', 'uploader']
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market'], format: 'pdf' } }
         },
-        FileDetailed: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'File ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a6' },
-            filename: { type: 'string', description: 'Stored filename', example: 'document_20250715_143000.pdf' },
-            originalName: { type: 'string', description: 'Original filename as uploaded', example: 'AI Research Paper.pdf' },
-            mimeType: { type: 'string', description: 'File MIME type', example: 'application/pdf' },
-            size: { type: 'number', description: 'File size in bytes', example: 2048576 },
-            checksum: { type: 'string', description: 'File checksum for integrity verification', example: 'sha256:abc123def456...' },
-            storageUrl: { type: 'string', format: 'url', description: 'File storage URL', example: 'https://storage.example.com/files/document_20250715_143000.pdf' },
-            previewUrl: { type: 'string', format: 'url', description: 'File preview URL (if available)', example: 'https://storage.example.com/previews/document_20250715_143000.jpg' },
-            createdAt: { type: 'string', format: 'date-time', description: 'File upload timestamp', example: '2025-07-15T14:30:00Z' },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional file metadata', example: { tags: ['research', 'ai'], processed: true } },
-            uploader: {
+        required: ['type', 'title', 'content']
+      },
+      UpdateArtifactRequest: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', minLength: 1, maxLength: 200, description: 'Artifact title', example: 'Updated AI Market Analysis Report' },
+          description: { type: 'string', maxLength: 1000, description: 'Artifact description', example: 'Updated comprehensive analysis of AI market trends' },
+          content: { type: 'string', minLength: 1, description: 'Artifact content (fallback text)', example: 'This updated report analyzes...' },
+          blocks: {
+            type: 'array',
+            items: { type: 'object', additionalProperties: true },
+            description: 'Rich UI blocks as JSON',
+            example: [{ type: 'text', text: 'Updated Market Overview' }, { type: 'chart', data: { labels: ['Q1', 'Q2'], values: [120, 180] } }]
+          },
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market', 'updated'], format: 'pdf' } }
+        }
+      },
+      File: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'File ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a6' },
+          filename: { type: 'string', description: 'Stored filename', example: 'document_20250715_143000.pdf' },
+          originalName: { type: 'string', description: 'Original filename as uploaded', example: 'AI Research Paper.pdf' },
+          mimeType: { type: 'string', description: 'File MIME type', example: 'application/pdf' },
+          size: { type: 'number', description: 'File size in bytes', example: 2048576 },
+          checksum: { type: 'string', description: 'File checksum for integrity verification', example: 'sha256:abc123def456...' },
+          storageUrl: { type: 'string', format: 'url', description: 'File storage URL', example: 'https://storage.example.com/files/document_20250715_143000.pdf' },
+          previewUrl: { type: 'string', format: 'url', description: 'File preview URL (if available)', example: 'https://storage.example.com/previews/document_20250715_143000.jpg' },
+          createdAt: { type: 'string', format: 'date-time', description: 'File upload timestamp', example: '2025-07-15T14:30:00Z' },
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional file metadata', example: { tags: ['research', 'ai'], processed: true } },
+          uploader: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+              email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+              name: { type: 'string', description: 'User full name', example: 'John Doe' },
+              nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+              avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+            },
+            required: ['id', 'email'],
+            description: 'User who uploaded the file'
+          }
+        },
+        required: ['id', 'filename', 'originalName', 'mimeType', 'size', 'storageUrl', 'createdAt', 'uploader']
+      },
+      FileDetailed: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'File ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a6' },
+          filename: { type: 'string', description: 'Stored filename', example: 'document_20250715_143000.pdf' },
+          originalName: { type: 'string', description: 'Original filename as uploaded', example: 'AI Research Paper.pdf' },
+          mimeType: { type: 'string', description: 'File MIME type', example: 'application/pdf' },
+          size: { type: 'number', description: 'File size in bytes', example: 2048576 },
+          checksum: { type: 'string', description: 'File checksum for integrity verification', example: 'sha256:abc123def456...' },
+          storageUrl: { type: 'string', format: 'url', description: 'File storage URL', example: 'https://storage.example.com/files/document_20250715_143000.pdf' },
+          previewUrl: { type: 'string', format: 'url', description: 'File preview URL (if available)', example: 'https://storage.example.com/previews/document_20250715_143000.jpg' },
+          createdAt: { type: 'string', format: 'date-time', description: 'File upload timestamp', example: '2025-07-15T14:30:00Z' },
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional file metadata', example: { tags: ['research', 'ai'], processed: true } },
+          uploader: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+              email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+              name: { type: 'string', description: 'User full name', example: 'John Doe' },
+              nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+              avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+            },
+            required: ['id', 'email'],
+            description: 'User who uploaded the file'
+          },
+          messages: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
-                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
-                name: { type: 'string', description: 'User full name', example: 'John Doe' },
-                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
-                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
-              },
-              required: ['id', 'email'],
-              description: 'User who uploaded the file'
-            },
-            messages: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  message: {
-                    type: 'object',
-                    properties: {
-                      id: { type: 'string', description: 'Message ID', example: 'ck9x8v7b600034l5r8jlkf0a3' },
-                      content: { type: 'string', description: 'Message content', example: 'Here is the research paper...' },
-                      createdAt: { type: 'string', format: 'date-time', description: 'Message creation timestamp', example: '2025-07-15T14:35:00Z' },
-                      thread: {
-                        type: 'object',
-                        properties: {
-                          id: { type: 'string', description: 'Thread ID', example: 'ck9x8v7b600034l5r8jlkf0a2' },
-                          title: { type: 'string', description: 'Thread title', example: 'AI Research Discussion' }
-                        }
+                message: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', description: 'Message ID', example: 'ck9x8v7b600034l5r8jlkf0a3' },
+                    content: { type: 'string', description: 'Message content', example: 'Here is the research paper...' },
+                    createdAt: { type: 'string', format: 'date-time', description: 'Message creation timestamp', example: '2025-07-15T14:35:00Z' },
+                    thread: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', description: 'Thread ID', example: 'ck9x8v7b600034l5r8jlkf0a2' },
+                        title: { type: 'string', description: 'Thread title', example: 'AI Research Discussion' }
                       }
                     }
                   }
                 }
-              },
-              description: 'Messages that reference this file'
-            }
-          },
-          required: ['id', 'filename', 'originalName', 'mimeType', 'size', 'storageUrl', 'createdAt', 'uploader']
+              }
+            },
+            description: 'Messages that reference this file'
+          }
         },
-        CreateFileRequest: {
-          type: 'object',
-          properties: {
-            filename: { type: 'string', minLength: 1, maxLength: 255, description: 'Stored filename', example: 'document_20250715_143000.pdf' },
-            originalName: { type: 'string', minLength: 1, maxLength: 255, description: 'Original filename as uploaded', example: 'AI Research Paper.pdf' },
-            mimeType: { type: 'string', minLength: 1, description: 'File MIME type', example: 'application/pdf' },
-            size: { type: 'number', minimum: 0, description: 'File size in bytes', example: 2048576 },
-            checksum: { type: 'string', minLength: 1, description: 'File checksum for integrity verification', example: 'sha256:abc123def456...' },
-            storageUrl: { type: 'string', format: 'url', description: 'File storage URL', example: 'https://storage.example.com/files/document_20250715_143000.pdf' },
-            previewUrl: { type: 'string', format: 'url', description: 'File preview URL (if available)', example: 'https://storage.example.com/previews/document_20250715_143000.jpg' },
-            metadata: { type: 'object', additionalProperties: true, description: 'Additional file metadata', example: { tags: ['research', 'ai'], processed: true } }
-          },
-          required: ['filename', 'originalName', 'mimeType', 'size', 'checksum', 'storageUrl']
+        required: ['id', 'filename', 'originalName', 'mimeType', 'size', 'storageUrl', 'createdAt', 'uploader']
+      },
+      CreateFileRequest: {
+        type: 'object',
+        properties: {
+          filename: { type: 'string', minLength: 1, maxLength: 255, description: 'Stored filename', example: 'document_20250715_143000.pdf' },
+          originalName: { type: 'string', minLength: 1, maxLength: 255, description: 'Original filename as uploaded', example: 'AI Research Paper.pdf' },
+          mimeType: { type: 'string', minLength: 1, description: 'File MIME type', example: 'application/pdf' },
+          size: { type: 'number', minimum: 0, description: 'File size in bytes', example: 2048576 },
+          checksum: { type: 'string', minLength: 1, description: 'File checksum for integrity verification', example: 'sha256:abc123def456...' },
+          storageUrl: { type: 'string', format: 'url', description: 'File storage URL', example: 'https://storage.example.com/files/document_20250715_143000.pdf' },
+          previewUrl: { type: 'string', format: 'url', description: 'File preview URL (if available)', example: 'https://storage.example.com/previews/document_20250715_143000.jpg' },
+          metadata: { type: 'object', additionalProperties: true, description: 'Additional file metadata', example: { tags: ['research', 'ai'], processed: true } }
         },
-        Reaction: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'Reaction ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a7' },
-            emoji: { type: 'string', description: 'Emoji used for reaction', example: '👍' },
-            createdAt: { type: 'string', format: 'date-time', description: 'Reaction creation timestamp', example: '2025-07-15T14:40:00Z' },
-            user: {
+        required: ['filename', 'originalName', 'mimeType', 'size', 'checksum', 'storageUrl']
+      },
+      Reaction: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Reaction ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a7' },
+          emoji: { type: 'string', description: 'Emoji used for reaction', example: '👍' },
+          createdAt: { type: 'string', format: 'date-time', description: 'Reaction creation timestamp', example: '2025-07-15T14:40:00Z' },
+          user: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+              email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+              name: { type: 'string', description: 'User full name', example: 'John Doe' },
+              nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+              avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+            },
+            required: ['id', 'email'],
+            description: 'User who created the reaction'
+          }
+        },
+        required: ['id', 'emoji', 'createdAt', 'user']
+      },
+      MessageReactions: {
+        type: 'object',
+        properties: {
+          messageId: { type: 'string', description: 'Message ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a3' },
+          reactions: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
-                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
-                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
-                name: { type: 'string', description: 'User full name', example: 'John Doe' },
-                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
-                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
-              },
-              required: ['id', 'email'],
-              description: 'User who created the reaction'
-            }
-          },
-          required: ['id', 'emoji', 'createdAt', 'user']
-        },
-        MessageReactions: {
-          type: 'object',
-          properties: {
-            messageId: { type: 'string', description: 'Message ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a3' },
-            reactions: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  emoji: { type: 'string', description: 'Emoji used for reaction', example: '👍' },
-                  count: { type: 'number', description: 'Number of users who reacted with this emoji', example: 3 },
-                  users: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
-                        email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
-                        name: { type: 'string', description: 'User full name', example: 'John Doe' },
-                        nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
-                        avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
-                      },
-                      required: ['id', 'email']
+                emoji: { type: 'string', description: 'Emoji used for reaction', example: '👍' },
+                count: { type: 'number', description: 'Number of users who reacted with this emoji', example: 3 },
+                users: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+                      email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+                      name: { type: 'string', description: 'User full name', example: 'John Doe' },
+                      nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+                      avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
                     },
-                    description: 'Users who reacted with this emoji'
-                  }
-                },
-                required: ['emoji', 'count', 'users']
+                    required: ['id', 'email']
+                  },
+                  description: 'Users who reacted with this emoji'
+                }
               },
-              description: 'Reactions grouped by emoji'
+              required: ['emoji', 'count', 'users']
             },
-            total: { type: 'number', description: 'Total number of reactions', example: 5 }
+            description: 'Reactions grouped by emoji'
           },
-          required: ['messageId', 'reactions', 'total']
+          total: { type: 'number', description: 'Total number of reactions', example: 5 }
         },
-        AddReactionRequest: {
-          type: 'object',
-          properties: {
-            emoji: { type: 'string', minLength: 1, maxLength: 50, description: 'Emoji to add or remove', example: '👍' },
-            action: { type: 'string', enum: ['add', 'remove'], description: 'Action to perform', example: 'add' }
-          },
-          required: ['emoji', 'action']
+        required: ['messageId', 'reactions', 'total']
+      },
+      AddReactionRequest: {
+        type: 'object',
+        properties: {
+          emoji: { type: 'string', minLength: 1, maxLength: 50, description: 'Emoji to add or remove', example: '👍' },
+          action: { type: 'string', enum: ['add', 'remove'], description: 'Action to perform', example: 'add' }
         },
-        RemovedReaction: {
-          type: 'object',
-          properties: {
-            removed: { type: 'boolean', example: true, description: 'Indicates the reaction was removed' },
-            emoji: { type: 'string', description: 'Emoji that was removed', example: '👍' },
-            messageId: { type: 'string', description: 'Message ID from which reaction was removed', example: 'ck9x8v7b600034l5r8jlkf0a3' }
-          },
-          required: ['removed', 'emoji', 'messageId']
+        required: ['emoji', 'action']
+      },
+      RemovedReaction: {
+        type: 'object',
+        properties: {
+          removed: { type: 'boolean', example: true, description: 'Indicates the reaction was removed' },
+          emoji: { type: 'string', description: 'Emoji that was removed', example: '👍' },
+          messageId: { type: 'string', description: 'Message ID from which reaction was removed', example: 'ck9x8v7b600034l5r8jlkf0a3' }
         },
-        ResponseMetadata: {
-          type: 'object',
-          properties: {
-            timestamp: { type: 'string', format: 'date-time', description: 'Response timestamp', example: '2025-07-14T12:00:00Z' },
-            correlation_id: { type: 'string', format: 'uuid', description: 'Request correlation ID', example: '123e4567-e89b-12d3-a456-426614174000' },
-            version: { type: 'string', description: 'API version', example: '1.0' }
-          }
-        },
-        Error: {
-          type: 'object',
-          properties: {
-            type: { type: 'string', description: 'Error type', example: 'https://httpstatuses.com/400' },
-            title: { type: 'string', description: 'Error title', example: 'Bad Request' },
-            status: { type: 'number', description: 'HTTP status code', example: 400 },
-            detail: { type: 'string', description: 'Error detail message', example: 'The request was invalid' },
-            instance: { type: 'string', description: 'Error instance path', example: '/api/v1/users' },
-            timestamp: { type: 'string', format: 'date-time', description: 'Error timestamp', example: '2025-07-14T12:00:00Z' },
-            trace_id: { type: 'string', format: 'uuid', description: 'Error trace ID', example: '123e4567-e89b-12d3-a456-426614174000' }
+        required: ['removed', 'emoji', 'messageId']
+      },
+      ResponseMetadata: {
+        type: 'object',
+        properties: {
+          timestamp: { type: 'string', format: 'date-time', description: 'Response timestamp', example: '2025-07-14T12:00:00Z' },
+          correlation_id: { type: 'string', format: 'uuid', description: 'Request correlation ID', example: '123e4567-e89b-12d3-a456-426614174000' },
+          version: { type: 'string', description: 'API version', example: '1.0' }
+        }
+      },
+      Error: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', description: 'Error type', example: 'https://httpstatuses.com/400' },
+          title: { type: 'string', description: 'Error title', example: 'Bad Request' },
+          status: { type: 'number', description: 'HTTP status code', example: 400 },
+          detail: { type: 'string', description: 'Error detail message', example: 'The request was invalid' },
+          instance: { type: 'string', description: 'Error instance path', example: '/api/v1/users' },
+          timestamp: { type: 'string', format: 'date-time', description: 'Error timestamp', example: '2025-07-14T12:00:00Z' },
+          trace_id: { type: 'string', format: 'uuid', description: 'Error trace ID', example: '123e4567-e89b-12d3-a456-426614174000' }
+        }
+      }
+    },
+    responses: {
+      BadRequest: {
+        description: 'Invalid request parameters or body',
+        content: {
+          'application/json': {
+            schema: { '$ref': '#/components/schemas/Error' }
           }
         }
       },
-      responses: {
-        BadRequest: {
-          description: 'Invalid request parameters or body',
-          content: {
-            'application/json': {
-              schema: { '$ref': '#/components/schemas/Error' }
-            }
-          }
-        },
-        NotFound: {
-          description: 'Resource not found',
-          content: {
-            'application/json': {
-              schema: { '$ref': '#/components/schemas/Error' }
-            }
-          }
-        },
-        Conflict: {
-          description: 'Resource already exists',
-          content: {
-            'application/json': {
-              schema: { '$ref': '#/components/schemas/Error' }
-            }
-          }
-        },
-        InternalServerError: {
-          description: 'Internal server error',
-          content: {
-            'application/json': {
-              schema: { '$ref': '#/components/schemas/Error' }
-            }
+      NotFound: {
+        description: 'Resource not found',
+        content: {
+          'application/json': {
+            schema: { '$ref': '#/components/schemas/Error' }
           }
         }
       },
-      securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-          description: 'Enter your JWT token in the format: Bearer {token}'
+      Conflict: {
+        description: 'Resource already exists',
+        content: {
+          'application/json': {
+            schema: { '$ref': '#/components/schemas/Error' }
+          }
         }
+      },
+      InternalServerError: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: { '$ref': '#/components/schemas/Error' }
+          }
+        }
+      }
+    },
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Enter your JWT token in the format: Bearer {token}'
       }
     }
   }
+}
 
 // Mount Swagger UI with the OpenAPI document
 api.get('/api/v1/docs', swaggerUI({ url: '/api/v1/openapi.json' }));
@@ -1919,7 +1919,7 @@ api.get('/api/v1/openapi.json', (c) => {
 // Register routes
 api.openapi(healthCheckRoute, async (c) => {
   const startTime = Date.now();
-  
+
   try {
     // Simple health check without database dependency for now
     // TODO: Add database connectivity check when available

@@ -59,7 +59,7 @@ describe('Response Utils', () => {
       expect(body).toMatchObject({
         success: false,
         error: {
-          type: 'https://api.rpotential.dev/problems/bad-request',
+          type: 'https://experience.rpotential.dev/problems/bad-request',
           title: 'Bad Request',
           status: 400,
           detail: 'Invalid input',

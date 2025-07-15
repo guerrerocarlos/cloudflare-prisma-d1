@@ -72,7 +72,7 @@ export function createErrorResponse(
   correlationId?: string
 ): Response {
   const apiError: ApiError = {
-    type: error.type || `https://api.rpotential.dev/problems/${error.title.toLowerCase().replace(/\s+/g, '-')}`,
+    type: error.type || `https://experience.rpotential.dev/problems/${error.title.toLowerCase().replace(/\s+/g, '-')}`,
     title: error.title,
     status: error.status,
     detail: error.detail,

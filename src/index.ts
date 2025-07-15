@@ -55,7 +55,7 @@ app.get('/api/v1', (c) => {
     version: '1.0.0',
     name: 'RPotential Experience Layer API',
     description: 'Backend API for the Chief Potential Officer System',
-    documentation: 'https://api.rpotential.dev/docs',
+    documentation: 'https://experience.rpotential.dev/docs',
     endpoints: {
       users: '/api/v1/users',
       threads: '/api/v1/threads',
@@ -82,12 +82,7 @@ app.get('/health', (c) => {
 app.route('/api/v1', authRoutes);
 
 // Protected API routes - require JWT authentication
-app.use('/api/v1/users*', authenticateUser);
-app.use('/api/v1/threads*', authenticateUser);
-app.use('/api/v1/messages*', authenticateUser);
-app.use('/api/v1/artifacts*', authenticateUser);
-app.use('/api/v1/files*', authenticateUser);
-app.use('/api/v1/reactions*', authenticateUser);
+app.use('/api/v1/*', authenticateWithRedirect);
 
 // Admin-only routes
 app.use('/api/v1/users', requireRole(['ADMIN']));
