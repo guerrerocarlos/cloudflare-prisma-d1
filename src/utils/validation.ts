@@ -86,14 +86,16 @@ export const createArtifactSchema = z.object({
   type: artifactTypeSchema,
   title: z.string().min(1).max(200),
   description: z.string().max(1000).optional(),
-  data: z.record(z.string(), z.any()),
+  content: z.string().min(1),
+  blocks: z.array(z.record(z.string(), z.any())).optional(),
   metadata: z.record(z.string(), z.any()).optional()
 });
 
 export const updateArtifactSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(1000).optional(),
-  data: z.record(z.string(), z.any()).optional(),
+  content: z.string().min(1).optional(),
+  blocks: z.array(z.record(z.string(), z.any())).optional(),
   metadata: z.record(z.string(), z.any()).optional()
 });
 

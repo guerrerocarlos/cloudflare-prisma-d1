@@ -168,7 +168,8 @@ model Artifact {
   type        ArtifactType
   title       String
   description String?
-  data        Json         // Artifact content stored as JSON
+  content   String      // Fallback text content
+  blocks    Json?       // Rich UI blocks as JSON
   version     Int          @default(1)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt

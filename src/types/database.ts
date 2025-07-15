@@ -202,7 +202,8 @@ export interface CreateArtifactData {
   type: ArtifactType;
   title: string;
   description?: string;
-  data: Record<string, any>;
+  content: string;
+  blocks?: Record<string, any>[];
   version?: number;
   metadata?: Record<string, any>;
 }
@@ -210,7 +211,8 @@ export interface CreateArtifactData {
 export interface UpdateArtifactData {
   title?: string;
   description?: string;
-  data?: Record<string, any>;
+  content?: string;
+  blocks?: Record<string, any>[];
   version?: number;
   metadata?: Record<string, any>;
 }

@@ -1568,6 +1568,13 @@ const openApiDocument = {
             type: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'], description: 'Artifact type', example: 'INSIGHT' },
             title: { type: 'string', description: 'Artifact title', example: 'AI Market Analysis Report' },
             description: { type: 'string', description: 'Artifact description', example: 'Comprehensive analysis of AI market trends and opportunities' },
+            content: { type: 'string', description: 'Artifact content (fallback text)', example: 'This report analyzes the current AI market trends...' },
+            blocks: { 
+              type: 'array', 
+              items: { type: 'object', additionalProperties: true },
+              description: 'Rich UI blocks as JSON',
+              example: [{ type: 'text', text: 'Market Overview' }, { type: 'chart', data: { labels: ['Q1', 'Q2'], values: [100, 150] } }]
+            },
             version: { type: 'number', description: 'Artifact version number', example: 1 },
             createdAt: { type: 'string', format: 'date-time', description: 'Artifact creation timestamp', example: '2025-07-15T14:30:00Z' },
             updatedAt: { type: 'string', format: 'date-time', description: 'Artifact last update timestamp', example: '2025-07-15T14:30:00Z' },
@@ -1594,7 +1601,7 @@ const openApiDocument = {
               description: 'User who created the artifact'
             }
           },
-          required: ['id', 'type', 'title', 'version', 'createdAt', 'updatedAt', 'user']
+          required: ['id', 'type', 'title', 'content', 'version', 'createdAt', 'updatedAt', 'user']
         },
         ArtifactDetailed: {
           type: 'object',
@@ -1603,7 +1610,13 @@ const openApiDocument = {
             type: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'], description: 'Artifact type', example: 'INSIGHT' },
             title: { type: 'string', description: 'Artifact title', example: 'AI Market Analysis Report' },
             description: { type: 'string', description: 'Artifact description', example: 'Comprehensive analysis of AI market trends and opportunities' },
-            data: { type: 'object', additionalProperties: true, description: 'Artifact data content', example: { content: 'Report content...', charts: [], insights: [] } },
+            content: { type: 'string', description: 'Artifact content (fallback text)', example: 'This report analyzes the current AI market trends...' },
+            blocks: { 
+              type: 'array', 
+              items: { type: 'object', additionalProperties: true },
+              description: 'Rich UI blocks as JSON',
+              example: [{ type: 'text', text: 'Market Overview' }, { type: 'chart', data: { labels: ['Q1', 'Q2'], values: [100, 150] } }]
+            },
             version: { type: 'number', description: 'Artifact version number', example: 1 },
             createdAt: { type: 'string', format: 'date-time', description: 'Artifact creation timestamp', example: '2025-07-15T14:30:00Z' },
             updatedAt: { type: 'string', format: 'date-time', description: 'Artifact last update timestamp', example: '2025-07-15T14:30:00Z' },
@@ -1630,7 +1643,7 @@ const openApiDocument = {
               description: 'User who created the artifact'
             }
           },
-          required: ['id', 'type', 'title', 'data', 'version', 'createdAt', 'updatedAt', 'user']
+          required: ['id', 'type', 'title', 'content', 'version', 'createdAt', 'updatedAt', 'user']
         },
         CreateArtifactRequest: {
           type: 'object',
@@ -1638,17 +1651,29 @@ const openApiDocument = {
             type: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'], description: 'Artifact type', example: 'INSIGHT' },
             title: { type: 'string', minLength: 1, maxLength: 200, description: 'Artifact title', example: 'AI Market Analysis Report' },
             description: { type: 'string', maxLength: 1000, description: 'Artifact description', example: 'Comprehensive analysis of AI market trends and opportunities' },
-            data: { type: 'object', additionalProperties: true, description: 'Artifact data content', example: { content: 'Report content...', charts: [], insights: [] } },
+            content: { type: 'string', minLength: 1, description: 'Artifact content (fallback text)', example: 'This report analyzes the current AI market trends...' },
+            blocks: { 
+              type: 'array', 
+              items: { type: 'object', additionalProperties: true },
+              description: 'Rich UI blocks as JSON',
+              example: [{ type: 'text', text: 'Market Overview' }, { type: 'chart', data: { labels: ['Q1', 'Q2'], values: [100, 150] } }]
+            },
             metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market'], format: 'pdf' } }
           },
-          required: ['type', 'title', 'data']
+          required: ['type', 'title', 'content']
         },
         UpdateArtifactRequest: {
           type: 'object',
           properties: {
             title: { type: 'string', minLength: 1, maxLength: 200, description: 'Artifact title', example: 'Updated AI Market Analysis Report' },
             description: { type: 'string', maxLength: 1000, description: 'Artifact description', example: 'Updated comprehensive analysis of AI market trends' },
-            data: { type: 'object', additionalProperties: true, description: 'Artifact data content', example: { content: 'Updated report content...', charts: [], insights: [] } },
+            content: { type: 'string', minLength: 1, description: 'Artifact content (fallback text)', example: 'This updated report analyzes...' },
+            blocks: { 
+              type: 'array', 
+              items: { type: 'object', additionalProperties: true },
+              description: 'Rich UI blocks as JSON',
+              example: [{ type: 'text', text: 'Updated Market Overview' }, { type: 'chart', data: { labels: ['Q1', 'Q2'], values: [120, 180] } }]
+            },
             metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market', 'updated'], format: 'pdf' } }
           }
         },
