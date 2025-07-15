@@ -30,8 +30,8 @@ const openApiDocument = {
       description: 'Production server'
     },
     {
-      url: 'https://staging-api.rpotential.dev',
-      description: 'Staging server'
+      url: 'https://dev-api.rpotential.dev',
+      description: 'Development server'
     },
     {
       url: 'http://localhost:8787',

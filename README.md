@@ -10,7 +10,7 @@ This backend implements the **Experience Layer** from the [Experience Layer Docu
 - **Message System**: Rich messages with UI blocks and attachments  
 - **Artifact Management**: Structured outputs (insights, reports, dashboards)
 - **File Handling**: Secure upload/download with previews
-- **Authentication**: Google OAuth with role-based access control
+- **Authentication**: JWT-based authentication
 - **Real-time Features**: Server-Sent Events for live updates
 
 ## 🚀 Quick Start
@@ -42,14 +42,98 @@ pnpm dev
 # Health check
 curl http://localhost:8787/health
 
-# Create user
-curl -X POST http://localhost:8787/users \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "name": "Test User", "role": "USER"}'
+# Test JWT authentication (requires valid token)
+curl -H "Authorization: Bearer <jwt_token>" \
+     http://localhost:8787/api/v1/users/me
 
-# List users
-curl http://localhost:8787/users
+# Test with cookie authentication
+curl -H "Cookie: rpotential_auth=<jwt_token>" \
+     http://localhost:8787/api/v1/auth/verify
 ```
+
+## 🔐 Authentication System
+
+### JWT-based Authentication
+
+The backend now uses **JWT (JSON Web Token) authentication**. This replaces the previous session-based system with a more scalable and secure approach.
+
+#### Authentication Methods
+
+1. **Cookie Authentication** (Browser requests):
+   - Cookie name: `rpotential_auth`
+   - Automatically handled by browsers
+   - Supports redirect to auth service for unauthenticated requests
+
+2. **Bearer Token Authentication** (API clients):
+   - Header: `Authorization: Bearer <jwt_token>`
+   - Ideal for API integrations and mobile apps
+
+#### Middleware Functions
+
+- **`authenticateUser`**: Requires valid JWT, returns 401 if not authenticated
+- **`optionalAuth`**: Adds user info if authenticated, but continues if not  
+- **`authenticateWithRedirect`**: Redirects browser requests to auth service, returns 401 for API requests
+- **`requireRole(['ADMIN'])`**: Role-based access control for admin-only endpoints
+
+#### Environment Variables
+
+Required environment variables for JWT authentication:
+
+```bash
+# Required: Secret key for JWT verification
+JWT_SECRET=your-jwt-secret-key
+
+# Optional: Comma-separated list of allowed domains (defaults to rpotential.ai,globant.com)
+ALLOWED_DOMAINS=rpotential.ai,globant.com
+```
+
+#### JWT Token Structure
+
+JWT tokens must contain the following claims:
+
+```json
+{
+  "sub": "user_id",
+  "email": "user@example.com", 
+  "name": "User Name",
+  "domain": "rpotential.ai",
+  "role": "USER",
+  "exp": 1234567890,
+  "iat": 1234567890
+}
+```
+
+#### Protected Endpoints
+
+All API endpoints require authentication except:
+- `/health` - System health check
+- `/api/v1` - API version info
+- `/api/v1/auth/login` - Legacy login (for backwards compatibility)
+
+Protected endpoints include:
+- `/api/v1/users/*` (Admin role required for management operations)
+- `/api/v1/threads/*`
+- `/api/v1/messages/*`
+- `/api/v1/artifacts/*`
+- `/api/v1/files/*`
+- `/api/v1/reactions/*`
+
+#### Testing Authentication
+
+```bash
+# Verify JWT token
+curl -H "Authorization: Bearer <jwt_token>" \
+     http://localhost:8787/api/v1/auth/verify
+
+# Get current user profile
+curl -H "Cookie: rpotential_auth=<jwt_token>" \
+     http://localhost:8787/api/v1/users/me
+
+# Unauthenticated request (returns 401)
+curl http://localhost:8787/api/v1/users/me
+```
+
+For detailed authentication implementation, see: [AUTHENTICATION_INTEGRATION.md](./AUTHENTICATION_INTEGRATION.md)
 
 ## 📊 Database Schema
 
@@ -186,7 +270,8 @@ This implementation plan breaks down the Experience Layer Backend development in
 - ✅ Comprehensive error handling with RFC 7807 format
 - ✅ Modular routing system with proper path handling
 - ✅ Response formatting and status codes
-- ✅ Authentication middleware and session management
+- ✅ JWT authentication middleware
+- ✅ Role-based access control with domain validation
 - [ ] API documentation (OpenAPI/Swagger) - **Planned for Phase 3**
 
 **Implemented API Endpoints**:
@@ -198,10 +283,12 @@ GET    /api/v1/health         # API health check ✅
 POST   /api/v1/auth/login     # User authentication ✅
 POST   /api/v1/auth/logout    # Session logout ✅
 GET    /api/v1/auth/me        # Current user info ✅
+GET    /api/v1/auth/verify    # JWT token verification ✅
 GET    /api/v1/auth/sessions  # List user sessions ✅
 
 GET    /api/v1/users          # List users with pagination ✅
 GET    /api/v1/users/:id      # Get user profile ✅
+GET    /api/v1/users/me       # Get current user profile (JWT auth) ✅
 POST   /api/v1/users          # Create new user ✅
 PUT    /api/v1/users/:id      # Update user profile ✅
 DELETE /api/v1/users/:id      # Delete user ✅
@@ -242,7 +329,9 @@ POST   /users                 # Legacy user creation ✅
 **Key Achievements**:
 - **Modular Architecture**: Separate route files for each entity with proper organization
 - **Validation Middleware**: Comprehensive Zod-based validation for body, query, and path parameters
-- **Authentication System**: Token-based authentication with session management
+- **JWT Authentication**: JWT integration with cookie and Bearer token support
+- **Domain Validation**: Secure access control with allowed domain verification
+- **Role-based Access**: Admin/User role enforcement with middleware
 - **Error Handling**: Consistent RFC 7807 error responses with correlation IDs
 - **CORS & Security**: Proper CORS configuration and security headers
 - **Pagination**: Consistent pagination for list endpoints
@@ -299,26 +388,28 @@ POST   /users                 # Legacy user creation ✅
 - [ ] Security headers and CORS configuration
 - [ ] API key management for external integrations
 
-### Phase 4: Authentication & OAuth Integration 🔒 **PLANNED**
+### Phase 4: Authentication & OAuth Integration 🔒 **PARTIALLY COMPLETED**
 
 **Objective**: Implement production-ready authentication and authorization mechanisms.
 
 **Deliverables**:
-- [ ] Google OAuth 2.0 integration
-- [ ] JWT token management (access + refresh tokens)
-- [ ] Enhanced session management with secure storage
-- [ ] Role-based access control (RBAC) refinements
+- ✅ JWT token management
+- ✅ Enhanced session management with secure JWT storage
+- ✅ Role-based access control (RBAC) with Admin/User roles
+- ✅ Domain validation for secure access control
+- [ ] Google OAuth 2.0 integration (legacy compatibility)
 - [ ] Rate limiting and abuse prevention
 - [ ] Security headers and advanced CORS configuration
 - [ ] API key management for external integrations
 - [ ] Comprehensive audit logging
 
 **Security Features**:
-- **Authentication**: Google OAuth with JWT tokens
-- **Authorization**: Enhanced role-based permissions (Admin/User)
-- **Rate Limiting**: Per-user and per-endpoint limits
-- **Data Protection**: Advanced input sanitization and SQL injection prevention
-- **Audit Logging**: Comprehensive security events and access logs
+- **Authentication**: JWT-based with cookie and Bearer token support ✅
+- **Authorization**: Role-based permissions (Admin/User) ✅
+- **Domain Control**: Allowed domain validation (rpotential.ai, globant.com) ✅
+- **Rate Limiting**: Per-user and per-endpoint limits (planned)
+- **Data Protection**: Advanced input sanitization and SQL injection prevention (planned)
+- **Audit Logging**: Comprehensive security events and access logs (planned)
 
 ### Phase 5: Message System & UI Blocks 💬 **PLANNED**
 
@@ -462,3 +553,9 @@ Each phase must meet the following criteria before proceeding:
 - **Local Development**: Hot reload with local D1 database
 - **Staging**: Deployed to Cloudflare Workers with staging D1
 - **Production**: Blue-green deployment with health checks
+
+## 📚 Additional Documentation
+
+- **[Authentication Integration Guide](./AUTHENTICATION_INTEGRATION.md)**: Comprehensive guide to JWT authentication implementation
+- **[Phase 1 Summary](./PHASE1_SUMMARY.md)**: Database schema and core models implementation
+- **[Project Overview](./OVERVIEW.md)**: High-level project architecture and goals
