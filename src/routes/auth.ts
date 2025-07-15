@@ -10,6 +10,7 @@ import {
 } from '../utils/response';
 import { validateBody } from '../middleware/validation';
 import { authenticateUser, getCurrentUser } from '../middleware/auth';
+import type { AuthenticatedUser, JWTPayload } from '../middleware/auth';
 
 export interface Env {
   DB: D1Database;
@@ -34,7 +35,8 @@ const authRoutes = new Hono<{
   Bindings: Env,
   Variables: {
     validatedBody: LoginInput | LogoutInput,
-    authenticatedUser: any
+    authenticatedUser?: AuthenticatedUser,
+    jwtPayload?: JWTPayload
   }
 }>();
 
@@ -258,6 +260,51 @@ authRoutes.get(
         status: 500,
         title: 'Internal Server Error',
         detail: 'Failed to get sessions'
+      }, getCorrelationId(c.req.raw));
+    }
+  }
+);
+
+// GET /auth/verify - Verify JWT token (useful for frontend to check auth status)
+authRoutes.get(
+  '/auth/verify',
+  authenticateUser,
+  async (c) => {
+    try {
+      const user = getCurrentUser(c);
+      const jwtPayload = c.get('jwtPayload');
+
+      if (!user) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'No valid JWT token found'
+        }, getCorrelationId(c.req.raw));
+      }
+
+      return createSuccessResponse({
+        valid: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          nick: user.nick,
+          role: user.role,
+          avatarUrl: user.avatarUrl,
+          domain: user.domain
+        },
+        token: {
+          exp: jwtPayload?.exp,
+          iat: jwtPayload?.iat,
+          domain: jwtPayload?.domain
+        }
+      });
+    } catch (error) {
+      console.error('Error verifying JWT:', error);
+      return createErrorResponse({
+        status: 500,
+        title: 'Internal Server Error',
+        detail: 'Failed to verify JWT token'
       }, getCorrelationId(c.req.raw));
     }
   }

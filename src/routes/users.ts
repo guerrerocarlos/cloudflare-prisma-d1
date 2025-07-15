@@ -17,6 +17,8 @@ import {
 } from '../utils/validation';
 import type { CreateUserInput, UpdateUserInput, PaginationQuery } from '../utils/validation';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
+import { getCurrentUser, requireCurrentUser } from '../middleware/auth';
+import type { AuthenticatedUser, JWTPayload } from '../middleware/auth';
 
 export interface Env {
   DB: D1Database;
@@ -41,7 +43,9 @@ const userRoutes = new Hono<{
   Variables: {
     validatedBody: CreateUserInput | UpdateUserInput,
     validatedQuery: UserQuery,
-    validatedParams: UserParams
+    validatedParams: UserParams,
+    authenticatedUser?: AuthenticatedUser;
+    jwtPayload?: JWTPayload;
   }
 }>();
 
@@ -314,6 +318,68 @@ userRoutes.delete(
         status: 500,
         title: 'Internal Server Error',
         detail: 'Failed to delete user'
+      }, getCorrelationId(c.req.raw));
+    }
+  }
+);
+
+// GET /users/me - Get current user profile
+userRoutes.get(
+  '/users/me',
+  async (c) => {
+    try {
+      const currentUser = getCurrentUser(c);
+      
+      if (!currentUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'You must be authenticated to access your profile'
+        }, getCorrelationId(c.req.raw));
+      }
+
+      const prisma = getDatabaseClient(c.env.DB);
+      
+      // Get fresh user data from database
+      const user = await prisma.user.findUnique({
+        where: { id: currentUser.id },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          nick: true,
+          role: true,
+          avatarUrl: true,
+          createdAt: true,
+          updatedAt: true,
+          lastLoginAt: true
+        }
+      });
+
+      if (!user) {
+        return createErrorResponse({
+          status: 404,
+          title: 'User Not Found',
+          detail: 'Your user profile was not found in the database'
+        }, getCorrelationId(c.req.raw));
+      }
+
+      // Add JWT domain information to the response
+      const jwtPayload = c.get('jwtPayload');
+      const userProfile = {
+        ...user,
+        domain: currentUser.domain || jwtPayload?.domain
+      };
+
+      return createSuccessResponse(userProfile, {
+        correlation_id: getCorrelationId(c.req.raw)
+      });
+    } catch (error) {
+      console.error('Error fetching current user profile:', error);
+      return createErrorResponse({
+        status: 500,
+        title: 'Internal Server Error',
+        detail: 'Failed to fetch user profile'
       }, getCorrelationId(c.req.raw));
     }
   }

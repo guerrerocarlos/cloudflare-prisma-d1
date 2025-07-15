@@ -7,6 +7,12 @@ import {
   createErrorResponse, 
   getCorrelationId 
 } from './utils/response';
+import { 
+  authenticateUser, 
+  authenticateWithRedirect, 
+  optionalAuth,
+  requireRole 
+} from './middleware/auth';
 import { userRoutes } from './routes/users';
 import { threadRoutes } from './routes/threads';
 import { messageRoutes } from './routes/messages';
@@ -20,9 +26,17 @@ import { api as openApiApp } from './openapi/index';
 
 export interface Env {
   DB: D1Database;
+  JWT_SECRET?: string;
+  ALLOWED_DOMAINS?: string;
 }
 
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono<{ 
+  Bindings: Env,
+  Variables: {
+    authenticatedUser?: import('./middleware/auth').AuthenticatedUser;
+    jwtPayload?: import('./middleware/auth').JWTPayload;
+  }
+}>();
 
 // Middleware
 app.use('*', logger());
@@ -63,20 +77,33 @@ app.get('/health', (c) => {
   });
 });
 
-// Mount route modules
+// Mount route modules with authentication
+// Auth routes (no authentication required for login/logout)
+app.route('/api/v1', authRoutes);
+
+// Protected API routes - require JWT authentication
+app.use('/api/v1/users*', authenticateUser);
+app.use('/api/v1/threads*', authenticateUser);
+app.use('/api/v1/messages*', authenticateUser);
+app.use('/api/v1/artifacts*', authenticateUser);
+app.use('/api/v1/files*', authenticateUser);
+app.use('/api/v1/reactions*', authenticateUser);
+
+// Admin-only routes
+app.use('/api/v1/users', requireRole(['ADMIN']));
+
 app.route('/api/v1', userRoutes);
 app.route('/api/v1', threadRoutes);
 app.route('/api/v1', messageRoutes);
 app.route('/api/v1', artifactRoutes);
 app.route('/api/v1', fileRoutes);
 app.route('/api/v1', reactionRoutes);
-app.route('/api/v1', authRoutes);
 
 // Mount OpenAPI documentation app
 app.route('/', openApiApp);
 
-// Legacy endpoints for backward compatibility
-app.get('/users', async (c) => {
+// Legacy endpoints for backward compatibility (protected)
+app.get('/users', authenticateUser, requireRole(['ADMIN']), async (c) => {
   try {
     const prisma = getDatabaseClient(c.env.DB);
     const users = await prisma.user.findMany({
@@ -104,7 +131,7 @@ app.get('/users', async (c) => {
   }
 });
 
-app.post('/users', async (c) => {
+app.post('/users', authenticateUser, requireRole(['ADMIN']), async (c) => {
   try {
     const prisma = getDatabaseClient(c.env.DB);
     
