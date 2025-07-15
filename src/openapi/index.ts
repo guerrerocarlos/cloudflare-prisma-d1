@@ -345,6 +345,458 @@ const openApiDocument = {
           '500': { '$ref': '#/components/responses/InternalServerError' }
         }
       }
+    },
+    '/api/v1/threads': {
+      get: {
+        summary: 'List Threads',
+        description: 'Get a paginated list of threads with optional filtering',
+        tags: ['Threads'],
+        parameters: [
+          {
+            name: 'limit',
+            in: 'query',
+            description: 'Maximum number of threads to return (1-100)',
+            schema: { type: 'number', minimum: 1, maximum: 100, default: 25 }
+          },
+          {
+            name: 'cursor',
+            in: 'query',
+            description: 'Pagination cursor from previous response',
+            schema: { type: 'string' }
+          },
+          {
+            name: 'orderBy',
+            in: 'query',
+            description: 'Field to order by',
+            schema: { type: 'string', enum: ['createdAt', 'updatedAt', 'title'], default: 'createdAt' }
+          },
+          {
+            name: 'orderDirection',
+            in: 'query',
+            description: 'Order direction',
+            schema: { type: 'string', enum: ['asc', 'desc'], default: 'desc' }
+          },
+          {
+            name: 'status',
+            in: 'query',
+            description: 'Filter by thread status',
+            schema: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'] }
+          },
+          {
+            name: 'title',
+            in: 'query',
+            description: 'Filter by thread title (partial match)',
+            schema: { type: 'string' }
+          },
+          {
+            name: 'createdAfter',
+            in: 'query',
+            description: 'Filter threads created after this date',
+            schema: { type: 'string', format: 'date-time' }
+          },
+          {
+            name: 'createdBefore',
+            in: 'query',
+            description: 'Filter threads created before this date',
+            schema: { type: 'string', format: 'date-time' }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'List of threads',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: {
+                      type: 'array',
+                      items: { '$ref': '#/components/schemas/Thread' }
+                    },
+                    pagination: {
+                      type: 'object',
+                      properties: {
+                        hasMore: { type: 'boolean', example: true },
+                        continuationToken: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a2' },
+                        pageSize: { type: 'number', example: 25 }
+                      }
+                    },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      },
+      post: {
+        summary: 'Create Thread',
+        description: 'Create a new conversation thread',
+        tags: ['Threads'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { '$ref': '#/components/schemas/CreateThreadRequest' }
+            }
+          }
+        },
+        responses: {
+          '201': {
+            description: 'Thread created successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { '$ref': '#/components/schemas/Thread' },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      }
+    },
+    '/api/v1/threads/{id}': {
+      get: {
+        summary: 'Get Thread by ID',
+        description: 'Retrieve a specific thread by its ID',
+        tags: ['Threads'],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Thread ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a2' }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Thread details',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { '$ref': '#/components/schemas/Thread' },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      },
+      put: {
+        summary: 'Update Thread',
+        description: 'Update an existing thread',
+        tags: ['Threads'],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Thread ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a2' }
+          }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { '$ref': '#/components/schemas/UpdateThreadRequest' }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Thread updated successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { '$ref': '#/components/schemas/Thread' },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      },
+      delete: {
+        summary: 'Delete Thread',
+        description: 'Delete a thread (soft delete - marks as DELETED)',
+        tags: ['Threads'],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Thread ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a2' }
+          }
+        ],
+        responses: {
+          '204': {
+            description: 'Thread deleted successfully'
+          },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      }
+    },
+    '/api/v1/threads/{threadId}/messages': {
+      get: {
+        summary: 'List Messages in Thread',
+        description: 'Get a paginated list of messages in a specific thread',
+        tags: ['Messages'],
+        parameters: [
+          {
+            name: 'threadId',
+            in: 'path',
+            required: true,
+            description: 'Thread ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a2' }
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            description: 'Maximum number of messages to return (1-100)',
+            schema: { type: 'number', minimum: 1, maximum: 100, default: 25 }
+          },
+          {
+            name: 'cursor',
+            in: 'query',
+            description: 'Pagination cursor from previous response',
+            schema: { type: 'string' }
+          },
+          {
+            name: 'orderBy',
+            in: 'query',
+            description: 'Field to order by',
+            schema: { type: 'string', enum: ['createdAt', 'updatedAt'], default: 'createdAt' }
+          },
+          {
+            name: 'orderDirection',
+            in: 'query',
+            description: 'Order direction',
+            schema: { type: 'string', enum: ['asc', 'desc'], default: 'asc' }
+          },
+          {
+            name: 'role',
+            in: 'query',
+            description: 'Filter by message role',
+            schema: { type: 'string', enum: ['USER', 'ASSISTANT', 'SYSTEM'] }
+          },
+          {
+            name: 'hasAttachments',
+            in: 'query',
+            description: 'Filter by messages with/without attachments',
+            schema: { type: 'boolean' }
+          },
+          {
+            name: 'createdAfter',
+            in: 'query',
+            description: 'Filter messages created after this date',
+            schema: { type: 'string', format: 'date-time' }
+          },
+          {
+            name: 'createdBefore',
+            in: 'query',
+            description: 'Filter messages created before this date',
+            schema: { type: 'string', format: 'date-time' }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'List of messages',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: {
+                      type: 'array',
+                      items: { '$ref': '#/components/schemas/Message' }
+                    },
+                    pagination: {
+                      type: 'object',
+                      properties: {
+                        hasMore: { type: 'boolean', example: true },
+                        continuationToken: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a3' },
+                        pageSize: { type: 'number', example: 25 }
+                      }
+                    },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      },
+      post: {
+        summary: 'Create Message',
+        description: 'Create a new message in a thread',
+        tags: ['Messages'],
+        parameters: [
+          {
+            name: 'threadId',
+            in: 'path',
+            required: true,
+            description: 'Thread ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a2' }
+          }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { '$ref': '#/components/schemas/CreateMessageRequest' }
+            }
+          }
+        },
+        responses: {
+          '201': {
+            description: 'Message created successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { '$ref': '#/components/schemas/Message' },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      }
+    },
+    '/api/v1/messages/{id}': {
+      get: {
+        summary: 'Get Message by ID',
+        description: 'Retrieve a specific message by its ID',
+        tags: ['Messages'],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Message ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a3' }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Message details',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { '$ref': '#/components/schemas/Message' },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      },
+      put: {
+        summary: 'Update Message',
+        description: 'Update an existing message',
+        tags: ['Messages'],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Message ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a3' }
+          }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { '$ref': '#/components/schemas/UpdateMessageRequest' }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Message updated successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { '$ref': '#/components/schemas/Message' },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      },
+      delete: {
+        summary: 'Delete Message',
+        description: 'Delete a message',
+        tags: ['Messages'],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Message ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a3' }
+          }
+        ],
+        responses: {
+          '204': {
+            description: 'Message deleted successfully'
+          },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      }
     }
   },
   components: {
@@ -383,6 +835,134 @@ const openApiDocument = {
             nick: { type: 'string', minLength: 1, maxLength: 50, description: 'User nickname/display name', example: 'johndoe' },
             role: { type: 'string', enum: ['USER', 'ADMIN'], description: 'User role', example: 'USER' },
             avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+          }
+        },
+        Thread: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'Thread ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a2' },
+            title: { type: 'string', description: 'Thread title', example: 'Discussion about AI ethics' },
+            status: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'], description: 'Thread status', example: 'ACTIVE' },
+            createdAt: { type: 'string', format: 'date-time', description: 'Thread creation timestamp', example: '2025-07-15T10:30:00Z' },
+            updatedAt: { type: 'string', format: 'date-time', description: 'Thread last update timestamp', example: '2025-07-15T10:30:00Z' },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional thread metadata', example: { tags: ['ai', 'ethics'], priority: 'high' } },
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+                name: { type: 'string', description: 'User full name', example: 'John Doe' },
+                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+              },
+              required: ['id', 'email']
+            }
+          },
+          required: ['id', 'status', 'createdAt', 'updatedAt', 'user']
+        },
+        CreateThreadRequest: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', minLength: 1, maxLength: 200, description: 'Thread title', example: 'Discussion about AI ethics' },
+            description: { type: 'string', maxLength: 1000, description: 'Thread description', example: 'A detailed discussion about the ethical implications of AI' },
+            userId: { type: 'string', description: 'ID of the user creating the thread', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional thread metadata', example: { tags: ['ai', 'ethics'], priority: 'high' } }
+          },
+          required: ['userId']
+        },
+        UpdateThreadRequest: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', minLength: 1, maxLength: 200, description: 'Thread title', example: 'Updated discussion about AI ethics' },
+            status: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'], description: 'Thread status', example: 'ACTIVE' },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional thread metadata', example: { tags: ['ai', 'ethics'], priority: 'medium' } }
+          }
+        },
+        Message: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'Message ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a3' },
+            threadId: { type: 'string', description: 'Thread ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a2' },
+            role: { type: 'string', enum: ['USER', 'ASSISTANT', 'SYSTEM'], description: 'Message role', example: 'USER' },
+            content: { type: 'string', description: 'Message content', example: 'What are the key ethical considerations when developing AI systems?' },
+            blocks: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true },
+              description: 'Structured content blocks',
+              example: [{ type: 'text', text: 'Hello world' }, { type: 'image', url: 'https://example.com/image.jpg' }]
+            },
+            createdAt: { type: 'string', format: 'date-time', description: 'Message creation timestamp', example: '2025-07-15T10:35:00Z' },
+            updatedAt: { type: 'string', format: 'date-time', description: 'Message last update timestamp', example: '2025-07-15T10:35:00Z' },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional message metadata', example: { confidence: 0.95, model: 'gpt-4' } },
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+                name: { type: 'string', description: 'User full name', example: 'John Doe' },
+                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+              },
+              description: 'User who created the message (only for USER role messages)'
+            },
+            files: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', description: 'File ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a4' },
+                  filename: { type: 'string', description: 'Original filename', example: 'document.pdf' },
+                  title: { type: 'string', description: 'File title/description', example: 'AI Ethics Research Paper' },
+                  mimeType: { type: 'string', description: 'File MIME type', example: 'application/pdf' },
+                  size: { type: 'number', description: 'File size in bytes', example: 1024000 },
+                  url: { type: 'string', format: 'url', description: 'File download URL', example: 'https://storage.example.com/files/document.pdf' }
+                },
+                required: ['id', 'filename', 'title']
+              },
+              description: 'Attached files'
+            }
+          },
+          required: ['id', 'threadId', 'role', 'content', 'createdAt', 'updatedAt']
+        },
+        CreateMessageRequest: {
+          type: 'object',
+          properties: {
+            role: { type: 'string', enum: ['USER', 'ASSISTANT', 'SYSTEM'], description: 'Message role', example: 'USER' },
+            content: { type: 'string', minLength: 1, maxLength: 50000, description: 'Message content', example: 'What are the key ethical considerations when developing AI systems?' },
+            userId: { type: 'string', description: 'ID of the user creating the message (required for USER role)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+            blocks: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true },
+              description: 'Structured content blocks',
+              example: [{ type: 'text', text: 'Hello world' }]
+            },
+            attachments: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  file_id: { type: 'string', description: 'File ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a4' },
+                  title: { type: 'string', minLength: 1, maxLength: 255, description: 'File title/description', example: 'AI Ethics Research Paper' }
+                },
+                required: ['file_id', 'title']
+              },
+              description: 'File attachments'
+            },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional message metadata', example: { priority: 'high' } }
+          },
+          required: ['role', 'content']
+        },
+        UpdateMessageRequest: {
+          type: 'object',
+          properties: {
+            content: { type: 'string', minLength: 1, maxLength: 50000, description: 'Message content', example: 'Updated: What are the key ethical considerations when developing AI systems?' },
+            blocks: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true },
+              description: 'Structured content blocks',
+              example: [{ type: 'text', text: 'Updated content' }]
+            },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional message metadata', example: { edited: true, editReason: 'Fixed typo' } }
           }
         },
         ResponseMetadata: {
