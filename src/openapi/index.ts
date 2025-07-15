@@ -116,6 +116,131 @@ const openApiDocument = {
         }
       }
     },
+    '/api/v1/me': {
+      get: {
+        summary: 'Get Current User',
+        description: 'Get information about the currently authenticated user and their session',
+        tags: ['Auth'],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Current user information',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: {
+                      type: 'boolean',
+                      example: true
+                    },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        id: {
+                          type: 'string',
+                          description: 'User ID',
+                          example: 'ck9x8v7b600034l5r8jlkf0a1'
+                        },
+                        email: {
+                          type: 'string',
+                          format: 'email',
+                          description: 'User email',
+                          example: 'user@rpotential.ai'
+                        },
+                        name: {
+                          type: 'string',
+                          nullable: true,
+                          description: 'User full name',
+                          example: 'John Doe'
+                        },
+                        nick: {
+                          type: 'string',
+                          nullable: true,
+                          description: 'User nickname',
+                          example: 'johndoe'
+                        },
+                        role: {
+                          type: 'string',
+                          enum: ['USER', 'ADMIN'],
+                          description: 'User role',
+                          example: 'USER'
+                        },
+                        avatarUrl: {
+                          type: 'string',
+                          format: 'uri',
+                          nullable: true,
+                          description: 'User avatar URL',
+                          example: 'https://example.com/avatar.jpg'
+                        },
+                        domain: {
+                          type: 'string',
+                          nullable: true,
+                          description: 'User domain',
+                          example: 'rpotential.ai'
+                        },
+                        session: {
+                          type: 'object',
+                          properties: {
+                            exp: {
+                              type: 'number',
+                              nullable: true,
+                              description: 'JWT expiration timestamp',
+                              example: 1642793400
+                            },
+                            iat: {
+                              type: 'number',
+                              nullable: true,
+                              description: 'JWT issued at timestamp',
+                              example: 1642707000
+                            },
+                            domain: {
+                              type: 'string',
+                              nullable: true,
+                              description: 'JWT domain',
+                              example: 'rpotential.ai'
+                            }
+                          }
+                        }
+                      }
+                    },
+                    metadata: {
+                      type: 'object',
+                      properties: {
+                        timestamp: {
+                          type: 'string',
+                          format: 'date-time',
+                          example: '2025-07-15T12:00:00Z'
+                        },
+                        correlation_id: {
+                          type: 'string',
+                          format: 'uuid',
+                          example: '123e4567-e89b-12d3-a456-426614174000'
+                        },
+                        version: {
+                          type: 'string',
+                          example: '1.0.0'
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          '401': {
+            description: 'Unauthorized - Invalid or expired token',
+            content: {
+              'application/json': {
+                schema: {
+                  '$ref': '#/components/schemas/ErrorResponse'
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     '/api/v1/users': {
       get: {
         summary: 'List Users',

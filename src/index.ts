@@ -57,6 +57,8 @@ app.get('/api/v1', (c) => {
     description: 'Backend API for the Chief Potential Officer System',
     documentation: 'https://experience.rpotential.dev/docs',
     endpoints: {
+      me: '/api/v1/me',
+      auth: '/api/v1/auth',
       users: '/api/v1/users',
       threads: '/api/v1/threads',
       messages: '/api/v1/messages',
@@ -83,6 +85,46 @@ app.route('/api/v1', authRoutes);
 
 // Protected API routes - require JWT authentication
 app.use('/api/v1/*', authenticateWithRedirect);
+
+// GET /api/v1/me - Get current user session (simplified endpoint)
+app.get('/api/v1/me', async (c) => {
+  try {
+    const user = c.get('authenticatedUser');
+    const jwtPayload = c.get('jwtPayload');
+
+    if (!user) {
+      return createErrorResponse({
+        status: 401,
+        title: 'Authentication Required',
+        detail: 'No active session found'
+      }, getCorrelationId(c.req.raw));
+    }
+
+    return createSuccessResponse({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      nick: user.nick,
+      role: user.role,
+      avatarUrl: user.avatarUrl,
+      domain: user.domain,
+      session: {
+        exp: jwtPayload?.exp,
+        iat: jwtPayload?.iat,
+        domain: jwtPayload?.domain
+      }
+    }, {
+      correlation_id: getCorrelationId(c.req.raw)
+    });
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return createErrorResponse({
+      status: 500,
+      title: 'Internal Server Error',
+      detail: 'Failed to get current user information'
+    }, getCorrelationId(c.req.raw));
+  }
+});
 
 // Admin-only routes
 app.use('/api/v1/users', requireRole(['ADMIN']));
