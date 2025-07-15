@@ -797,6 +797,320 @@ const openApiDocument = {
           '500': { '$ref': '#/components/responses/InternalServerError' }
         }
       }
+    },
+    '/api/v1/artifacts': {
+      get: {
+        summary: 'List Artifacts',
+        description: 'Get a paginated list of artifacts with optional filtering',
+        tags: ['Artifacts'],
+        parameters: [
+          {
+            name: 'limit',
+            in: 'query',
+            description: 'Maximum number of artifacts to return (1-100)',
+            schema: { type: 'number', minimum: 1, maximum: 100, default: 25 }
+          },
+          {
+            name: 'cursor',
+            in: 'query',
+            description: 'Pagination cursor from previous response',
+            schema: { type: 'string' }
+          },
+          {
+            name: 'orderBy',
+            in: 'query',
+            description: 'Field to order by',
+            schema: { type: 'string', enum: ['createdAt', 'updatedAt', 'title'], default: 'createdAt' }
+          },
+          {
+            name: 'orderDirection',
+            in: 'query',
+            description: 'Order direction',
+            schema: { type: 'string', enum: ['asc', 'desc'], default: 'desc' }
+          },
+          {
+            name: 'type',
+            in: 'query',
+            description: 'Filter by artifact type',
+            schema: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'] }
+          },
+          {
+            name: 'createdAfter',
+            in: 'query',
+            description: 'Filter artifacts created after this date',
+            schema: { type: 'string', format: 'date-time' }
+          },
+          {
+            name: 'createdBefore',
+            in: 'query',
+            description: 'Filter artifacts created before this date',
+            schema: { type: 'string', format: 'date-time' }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'List of artifacts',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: {
+                      type: 'array',
+                      items: { '$ref': '#/components/schemas/Artifact' }
+                    },
+                    pagination: {
+                      type: 'object',
+                      properties: {
+                        hasMore: { type: 'boolean', example: true },
+                        continuationToken: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a5' },
+                        pageSize: { type: 'number', example: 25 }
+                      }
+                    },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      }
+    },
+    '/api/v1/artifacts/{id}': {
+      get: {
+        summary: 'Get Artifact by ID',
+        description: 'Retrieve a specific artifact by its ID',
+        tags: ['Artifacts'],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Artifact ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a5' }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Artifact details',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { '$ref': '#/components/schemas/ArtifactDetailed' },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      },
+      put: {
+        summary: 'Update Artifact',
+        description: 'Update an existing artifact',
+        tags: ['Artifacts'],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Artifact ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a5' }
+          }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { '$ref': '#/components/schemas/UpdateArtifactRequest' }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Artifact updated successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { '$ref': '#/components/schemas/Artifact' },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      },
+      delete: {
+        summary: 'Delete Artifact',
+        description: 'Delete an artifact',
+        tags: ['Artifacts'],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'Artifact ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a5' }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Artifact deleted successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        deleted: { type: 'boolean', example: true },
+                        id: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a5' }
+                      }
+                    },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      }
+    },
+    '/api/v1/threads/{threadId}/artifacts': {
+      get: {
+        summary: 'List Artifacts in Thread',
+        description: 'Get a list of artifacts in a specific thread',
+        tags: ['Artifacts'],
+        parameters: [
+          {
+            name: 'threadId',
+            in: 'path',
+            required: true,
+            description: 'Thread ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a2' }
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            description: 'Maximum number of artifacts to return (1-100)',
+            schema: { type: 'number', minimum: 1, maximum: 100, default: 25 }
+          },
+          {
+            name: 'orderBy',
+            in: 'query',
+            description: 'Field to order by',
+            schema: { type: 'string', enum: ['createdAt', 'updatedAt', 'title'], default: 'createdAt' }
+          },
+          {
+            name: 'orderDirection',
+            in: 'query',
+            description: 'Order direction',
+            schema: { type: 'string', enum: ['asc', 'desc'], default: 'desc' }
+          },
+          {
+            name: 'type',
+            in: 'query',
+            description: 'Filter by artifact type',
+            schema: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'] }
+          },
+          {
+            name: 'createdAfter',
+            in: 'query',
+            description: 'Filter artifacts created after this date',
+            schema: { type: 'string', format: 'date-time' }
+          },
+          {
+            name: 'createdBefore',
+            in: 'query',
+            description: 'Filter artifacts created before this date',
+            schema: { type: 'string', format: 'date-time' }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'List of artifacts in thread',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: {
+                      type: 'array',
+                      items: { '$ref': '#/components/schemas/Artifact' }
+                    },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      },
+      post: {
+        summary: 'Create Artifact in Thread',
+        description: 'Create a new artifact in a specific thread',
+        tags: ['Artifacts'],
+        parameters: [
+          {
+            name: 'threadId',
+            in: 'path',
+            required: true,
+            description: 'Thread ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a2' }
+          }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { '$ref': '#/components/schemas/CreateArtifactRequest' }
+            }
+          }
+        },
+        responses: {
+          '201': {
+            description: 'Artifact created successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { '$ref': '#/components/schemas/Artifact' },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      }
     }
   },
   components: {
@@ -963,6 +1277,97 @@ const openApiDocument = {
               example: [{ type: 'text', text: 'Updated content' }]
             },
             metadata: { type: 'object', additionalProperties: true, description: 'Additional message metadata', example: { edited: true, editReason: 'Fixed typo' } }
+          }
+        },
+        Artifact: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'Artifact ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a5' },
+            type: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'], description: 'Artifact type', example: 'INSIGHT' },
+            title: { type: 'string', description: 'Artifact title', example: 'AI Market Analysis Report' },
+            description: { type: 'string', description: 'Artifact description', example: 'Comprehensive analysis of AI market trends and opportunities' },
+            version: { type: 'number', description: 'Artifact version number', example: 1 },
+            createdAt: { type: 'string', format: 'date-time', description: 'Artifact creation timestamp', example: '2025-07-15T14:30:00Z' },
+            updatedAt: { type: 'string', format: 'date-time', description: 'Artifact last update timestamp', example: '2025-07-15T14:30:00Z' },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market'], format: 'pdf' } },
+            thread: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'Thread ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a2' },
+                title: { type: 'string', description: 'Thread title', example: 'AI Market Research Discussion' },
+                status: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'], description: 'Thread status', example: 'ACTIVE' }
+              },
+              description: 'Associated thread information'
+            },
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+                name: { type: 'string', description: 'User full name', example: 'John Doe' },
+                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+              },
+              required: ['id', 'email'],
+              description: 'User who created the artifact'
+            }
+          },
+          required: ['id', 'type', 'title', 'version', 'createdAt', 'updatedAt', 'user']
+        },
+        ArtifactDetailed: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'Artifact ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a5' },
+            type: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'], description: 'Artifact type', example: 'INSIGHT' },
+            title: { type: 'string', description: 'Artifact title', example: 'AI Market Analysis Report' },
+            description: { type: 'string', description: 'Artifact description', example: 'Comprehensive analysis of AI market trends and opportunities' },
+            data: { type: 'object', additionalProperties: true, description: 'Artifact data content', example: { content: 'Report content...', charts: [], insights: [] } },
+            version: { type: 'number', description: 'Artifact version number', example: 1 },
+            createdAt: { type: 'string', format: 'date-time', description: 'Artifact creation timestamp', example: '2025-07-15T14:30:00Z' },
+            updatedAt: { type: 'string', format: 'date-time', description: 'Artifact last update timestamp', example: '2025-07-15T14:30:00Z' },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market'], format: 'pdf' } },
+            thread: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'Thread ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a2' },
+                title: { type: 'string', description: 'Thread title', example: 'AI Market Research Discussion' },
+                status: { type: 'string', enum: ['ACTIVE', 'ARCHIVED', 'DELETED'], description: 'Thread status', example: 'ACTIVE' }
+              },
+              description: 'Associated thread information'
+            },
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+                name: { type: 'string', description: 'User full name', example: 'John Doe' },
+                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+              },
+              required: ['id', 'email'],
+              description: 'User who created the artifact'
+            }
+          },
+          required: ['id', 'type', 'title', 'data', 'version', 'createdAt', 'updatedAt', 'user']
+        },
+        CreateArtifactRequest: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', enum: ['INSIGHT', 'REPORT', 'DASHBOARD', 'PDF', 'REFERENCE'], description: 'Artifact type', example: 'INSIGHT' },
+            title: { type: 'string', minLength: 1, maxLength: 200, description: 'Artifact title', example: 'AI Market Analysis Report' },
+            description: { type: 'string', maxLength: 1000, description: 'Artifact description', example: 'Comprehensive analysis of AI market trends and opportunities' },
+            data: { type: 'object', additionalProperties: true, description: 'Artifact data content', example: { content: 'Report content...', charts: [], insights: [] } },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market'], format: 'pdf' } }
+          },
+          required: ['type', 'title', 'data']
+        },
+        UpdateArtifactRequest: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', minLength: 1, maxLength: 200, description: 'Artifact title', example: 'Updated AI Market Analysis Report' },
+            description: { type: 'string', maxLength: 1000, description: 'Artifact description', example: 'Updated comprehensive analysis of AI market trends' },
+            data: { type: 'object', additionalProperties: true, description: 'Artifact data content', example: { content: 'Updated report content...', charts: [], insights: [] } },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market', 'updated'], format: 'pdf' } }
           }
         },
         ResponseMetadata: {
