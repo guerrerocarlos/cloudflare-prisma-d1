@@ -17,6 +17,7 @@ import {
 } from '../utils/validation';
 import type { CreateThreadInput, UpdateThreadInput, ThreadQuery } from '../utils/validation';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
+import { authenticateUser, type AuthenticatedUser } from '../middleware/auth';
 
 export interface Env {
   DB: D1Database;
@@ -34,7 +35,8 @@ const threadRoutes = new Hono<{
   Variables: {
     validatedBody: CreateThreadInput | UpdateThreadInput,
     validatedQuery: ThreadQuery,
-    validatedParams: ThreadParams
+    validatedParams: ThreadParams,
+    authenticatedUser?: AuthenticatedUser
   }
 }>();
 
@@ -46,9 +48,20 @@ threadRoutes.get(
     try {
       const prisma = getDatabaseClient(c.env.DB);
       const query = c.get('validatedQuery') as ThreadQuery;
+      const authenticatedUser = c.get('authenticatedUser');
       
-      // Build where clause for filtering
-      const where: any = {};
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'User must be authenticated to access threads'
+        }, getCorrelationId(c.req.raw));
+      }
+      
+      // Build where clause for filtering - only show user's own threads
+      const where: any = {
+        userId: authenticatedUser.id
+      };
       if (query.status) {
         where.status = query.status;
       }
@@ -126,9 +139,21 @@ threadRoutes.get(
     try {
       const prisma = getDatabaseClient(c.env.DB);
       const { id } = c.get('validatedParams') as ThreadParams;
+      const authenticatedUser = c.get('authenticatedUser');
+      
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'User must be authenticated to access threads'
+        }, getCorrelationId(c.req.raw));
+      }
 
-      const thread = await prisma.thread.findUnique({
-        where: { id },
+      const thread = await prisma.thread.findFirst({
+        where: { 
+          id,
+          userId: authenticatedUser.id  // Only allow access to user's own threads
+        },
         select: {
           id: true,
           title: true,
@@ -179,14 +204,23 @@ threadRoutes.post(
       console.log('=== Thread Creation Started ===');
       const prisma = getDatabaseClient(c.env.DB);
       const threadData = c.get('validatedBody') as CreateThreadInput;
+      const authenticatedUser = c.get('authenticatedUser');
+      
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'User must be authenticated to create threads'
+        }, getCorrelationId(c.req.raw));
+      }
       
       console.log('Thread data received:', JSON.stringify(threadData, null, 2));
-      console.log('User ID:', threadData.userId);
+      console.log('User ID:', authenticatedUser.id);
 
       const thread = await prisma.thread.create({
         data: {
           title: threadData.title,
-          userId: threadData.userId,
+          userId: authenticatedUser.id,
           metadata: {
             ...threadData.metadata || {},
             ...(threadData.description && { description: threadData.description })
@@ -235,6 +269,7 @@ threadRoutes.post(
 // PUT /threads/:id - Update thread
 threadRoutes.put(
   '/threads/:id',
+  authenticateUser,
   validateParams(threadParamsSchema),
   validateBody(updateThreadSchema),
   async (c) => {
@@ -242,10 +277,22 @@ threadRoutes.put(
       const prisma = getDatabaseClient(c.env.DB);
       const { id } = c.get('validatedParams') as ThreadParams;
       const updateData = c.get('validatedBody') as UpdateThreadInput;
+      const authenticatedUser = c.get('authenticatedUser');
+      
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'User must be authenticated to update threads'
+        }, getCorrelationId(c.req.raw));
+      }
 
-      // Check if thread exists
-      const existingThread = await prisma.thread.findUnique({
-        where: { id }
+      // Check if thread exists and belongs to user
+      const existingThread = await prisma.thread.findFirst({
+        where: { 
+          id,
+          userId: authenticatedUser.id
+        }
       });
 
       if (!existingThread) {
@@ -295,22 +342,35 @@ threadRoutes.put(
 // DELETE /threads/:id - Delete thread
 threadRoutes.delete(
   '/threads/:id',
+  authenticateUser,
   validateParams(threadParamsSchema),
   async (c) => {
     try {
       const prisma = getDatabaseClient(c.env.DB);
       const { id } = c.get('validatedParams') as ThreadParams;
+      const authenticatedUser = c.get('authenticatedUser');
+      
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'User must be authenticated to delete threads'
+        }, getCorrelationId(c.req.raw));
+      }
 
-      // Check if thread exists
-      const existingThread = await prisma.thread.findUnique({
-        where: { id }
+      // Check if thread exists and belongs to user
+      const existingThread = await prisma.thread.findFirst({
+        where: { 
+          id,
+          userId: authenticatedUser.id
+        }
       });
 
       if (!existingThread) {
         return createErrorResponse({
           status: 404,
           title: 'Thread Not Found',
-          detail: `Thread with ID ${id} was not found`
+          detail: `Thread with ID ${id} was not found or you don't have permission to access it`
         }, getCorrelationId(c.req.raw));
       }
 

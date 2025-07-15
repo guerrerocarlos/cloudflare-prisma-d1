@@ -105,13 +105,6 @@ const createThreadRequestSchema = z.object({
       example: 'A detailed discussion about the ethical implications of AI'
     }
   ),
-  userId: safeOpenApi(
-    z.string(),
-    {
-      description: 'ID of the user creating the thread',
-      example: 'ck9x8v7b600034l5r8jlkf0a1'
-    }
-  ),
   metadata: safeOpenApi(
     z.record(z.any()).optional(),
     {

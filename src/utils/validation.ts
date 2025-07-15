@@ -33,8 +33,7 @@ export const updateUserSchema = z.object({
 // Thread schemas
 export const createThreadSchema = z.object({
   title: z.string().min(1).max(200).optional(),
-  description: z.string().max(1000).optional(), // Add description field
-  userId: cuidSchema, // Add userId field for now (will be from auth context later)
+  description: z.string().max(1000).optional(),
   metadata: z.record(z.string(), z.any()).optional()
 });
 
