@@ -37,7 +37,16 @@
 		"# DEVELOPMENT HELPERS": "Development workflow scripts",
 		"db": "./scripts/db-manager.sh",
 		"setup": "npm install && npm run db:setup",
-		"clean": "rm -rf node_modules dist .wrangler && npm install"
+		"clean": "rm -rf node_modules dist .wrangler && npm install",
+
+		"# LOGGING & MONITORING": "CloudFlare Workers logging and monitoring",
+		"logs": "wrangler tail",
+		"logs:pretty": "wrangler tail --format pretty",
+		"logs:json": "wrangler tail --format json",
+		"logs:grep": "wrangler tail --format pretty | grep -i",
+		"logs:errors": "wrangler tail --format pretty | grep -iE '(error|exception|failed|500)'",
+		"logs:thread": "wrangler tail --format pretty | grep -iE '(thread|POST.*threads)'",
+		"status": "wrangler dev --inspect"
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.8.19",

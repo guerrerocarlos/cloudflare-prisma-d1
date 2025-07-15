@@ -7,7 +7,91 @@ A Cloudflare Worker-based microservice implementing the Experience Layer backend
 This backend implements the **Experience Layer** from the [Experience Layer Documentation](https://rpotential.atlassian.net/wiki/spaces/~712020cfbf91f01fc6437b9e33c2b931ddf177/pages/46661789/Experience+Layer), providing:
 
 - **Thread Management**: Conversation contexts with memory and metadata
-- **Message System**: Rich messages with UI blocks and attachments  
+- **Message System### Deployment Strategy
+- **Local Development**: Hot reload with local D1 database
+- **Staging**: Deployed to Cloudflare Workers with staging D1
+- **Production**: Blue-green deployment with health checks
+
+## 📊 Logging & Monitoring
+
+### CloudFlare Workers Logs
+
+The project includes convenient npm scripts for monitoring your CloudFlare Worker logs in real-time. These are essential for debugging issues and monitoring application behavior in production.
+
+#### Basic Logging Commands
+
+```bash
+# Basic real-time logs
+npm run logs
+
+# Pretty formatted logs (recommended for development)
+npm run logs:pretty
+
+# JSON formatted logs (useful for log processing)
+npm run logs:json
+```
+
+#### Filtered Logging
+
+```bash
+# Show only errors and failures
+npm run logs:errors
+
+# Show only thread-related operations
+npm run logs:thread
+
+# Custom grep filtering (example: show POST requests)
+npm run logs:grep "POST"
+```
+
+#### Debugging Workflow
+
+1. **Start error monitoring** before testing:
+   ```bash
+   npm run logs:errors
+   ```
+
+2. **Test your API endpoint** (e.g., create a thread)
+
+3. **Monitor logs** for detailed error information including:
+   - Request payload validation
+   - Database operations
+   - Error stack traces
+   - Correlation IDs for tracing
+
+#### Enhanced Thread Creation Logging
+
+The thread creation endpoint includes detailed logging:
+- Request payload inspection
+- User ID validation
+- Database operation status
+- Success/failure confirmation
+- Error details with stack traces
+
+#### Example Log Output
+
+```
+=== Thread Creation Started ===
+Thread data received: {
+  "title": "Discussion about AI ethics",
+  "description": "A detailed discussion...",
+  "userId": "ck9x8v7b600034l5r8jlkf0a1",
+  "metadata": { "tags": ["ai", "ethics"], "priority": "high" }
+}
+User ID: ck9x8v7b600034l5r8jlkf0a1
+Thread created successfully: cm7x8v9b200034l5r9jlkf1b2
+=== Thread Creation Completed ===
+```
+
+#### Production Monitoring
+
+For production environments, consider:
+- **Log aggregation**: Collect logs in a centralized system
+- **Alerting**: Set up alerts for error patterns
+- **Performance metrics**: Monitor response times and throughput
+- **Health checks**: Regular endpoint availability monitoring
+
+## 🗄️ Database Schema Managementch messages with UI blocks and attachments  
 - **Artifact Management**: Structured outputs (insights, reports, dashboards)
 - **File Handling**: Secure upload/download with previews
 - **Authentication**: JWT-based authentication

@@ -176,14 +176,21 @@ threadRoutes.post(
   validateBody(createThreadSchema),
   async (c) => {
     try {
+      console.log('=== Thread Creation Started ===');
       const prisma = getDatabaseClient(c.env.DB);
       const threadData = c.get('validatedBody') as CreateThreadInput;
+      
+      console.log('Thread data received:', JSON.stringify(threadData, null, 2));
+      console.log('User ID:', threadData.userId);
 
       const thread = await prisma.thread.create({
         data: {
           title: threadData.title,
           userId: threadData.userId,
-          metadata: threadData.metadata || {}
+          metadata: {
+            ...threadData.metadata || {},
+            ...(threadData.description && { description: threadData.description })
+          }
         },
         select: {
           id: true,
@@ -204,11 +211,18 @@ threadRoutes.post(
         }
       });
 
+      console.log('Thread created successfully:', thread.id);
+      console.log('=== Thread Creation Completed ===');
+
       return createSuccessResponse(thread, {
         correlation_id: getCorrelationId(c.req.raw)
       });
     } catch (error) {
       console.error('Error creating thread:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+        console.error('Error stack:', error.stack);
+      }
       return createErrorResponse({
         status: 500,
         title: 'Internal Server Error',
