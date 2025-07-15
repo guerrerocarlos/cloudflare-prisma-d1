@@ -1111,6 +1111,288 @@ const openApiDocument = {
           '500': { '$ref': '#/components/responses/InternalServerError' }
         }
       }
+    },
+    '/api/v1/files': {
+      get: {
+        summary: 'List Files',
+        description: 'Get a paginated list of files with optional filtering',
+        tags: ['Files'],
+        parameters: [
+          {
+            name: 'limit',
+            in: 'query',
+            description: 'Maximum number of files to return (1-100)',
+            schema: { type: 'number', minimum: 1, maximum: 100, default: 25 }
+          },
+          {
+            name: 'cursor',
+            in: 'query',
+            description: 'Pagination cursor from previous response',
+            schema: { type: 'string' }
+          },
+          {
+            name: 'orderBy',
+            in: 'query',
+            description: 'Field to order by',
+            schema: { type: 'string', enum: ['createdAt', 'filename', 'size'], default: 'createdAt' }
+          },
+          {
+            name: 'orderDirection',
+            in: 'query',
+            description: 'Order direction',
+            schema: { type: 'string', enum: ['asc', 'desc'], default: 'desc' }
+          },
+          {
+            name: 'mimeType',
+            in: 'query',
+            description: 'Filter by MIME type (partial match)',
+            schema: { type: 'string', example: 'application/pdf' }
+          },
+          {
+            name: 'sizeMin',
+            in: 'query',
+            description: 'Filter files with minimum size in bytes',
+            schema: { type: 'number', minimum: 0, example: 1024 }
+          },
+          {
+            name: 'sizeMax',
+            in: 'query',
+            description: 'Filter files with maximum size in bytes',
+            schema: { type: 'number', minimum: 0, example: 10485760 }
+          },
+          {
+            name: 'createdAfter',
+            in: 'query',
+            description: 'Filter files created after this date',
+            schema: { type: 'string', format: 'date-time' }
+          },
+          {
+            name: 'createdBefore',
+            in: 'query',
+            description: 'Filter files created before this date',
+            schema: { type: 'string', format: 'date-time' }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'List of files',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: {
+                      type: 'array',
+                      items: { '$ref': '#/components/schemas/File' }
+                    },
+                    pagination: {
+                      type: 'object',
+                      properties: {
+                        hasMore: { type: 'boolean', example: true },
+                        continuationToken: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a6' },
+                        pageSize: { type: 'number', example: 25 }
+                      }
+                    },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      },
+      post: {
+        summary: 'Create File Record',
+        description: 'Create a new file record in the system',
+        tags: ['Files'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { '$ref': '#/components/schemas/CreateFileRequest' }
+            }
+          }
+        },
+        responses: {
+          '201': {
+            description: 'File record created successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { '$ref': '#/components/schemas/File' },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      }
+    },
+    '/api/v1/files/{id}': {
+      get: {
+        summary: 'Get File by ID',
+        description: 'Retrieve a specific file by its ID with detailed information',
+        tags: ['Files'],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'File ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a6' }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'File details with usage information',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { '$ref': '#/components/schemas/FileDetailed' },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      },
+      delete: {
+        summary: 'Delete File',
+        description: 'Delete a file record from the system',
+        tags: ['Files'],
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            description: 'File ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a6' }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'File deleted successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        deleted: { type: 'boolean', example: true },
+                        id: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a6' }
+                      }
+                    },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      }
+    },
+    '/api/v1/messages/{messageId}/reactions': {
+      get: {
+        summary: 'Get Message Reactions',
+        description: 'Get all reactions for a specific message, grouped by emoji',
+        tags: ['Reactions'],
+        parameters: [
+          {
+            name: 'messageId',
+            in: 'path',
+            required: true,
+            description: 'Message ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a3' }
+          }
+        ],
+        responses: {
+          '200': {
+            description: 'Message reactions grouped by emoji',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { '$ref': '#/components/schemas/MessageReactions' },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      },
+      post: {
+        summary: 'Add or Remove Reaction',
+        description: 'Add or remove a reaction to/from a message',
+        tags: ['Reactions'],
+        parameters: [
+          {
+            name: 'messageId',
+            in: 'path',
+            required: true,
+            description: 'Message ID (CUID)',
+            schema: { type: 'string', example: 'ck9x8v7b600034l5r8jlkf0a3' }
+          }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { '$ref': '#/components/schemas/AddReactionRequest' }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Reaction added or removed successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: { 
+                      oneOf: [
+                        { '$ref': '#/components/schemas/Reaction' },
+                        { '$ref': '#/components/schemas/RemovedReaction' }
+                      ]
+                    },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  }
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '404': { '$ref': '#/components/responses/NotFound' },
+          '409': { '$ref': '#/components/responses/Conflict' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      }
     }
   },
   components: {
@@ -1369,6 +1651,173 @@ const openApiDocument = {
             data: { type: 'object', additionalProperties: true, description: 'Artifact data content', example: { content: 'Updated report content...', charts: [], insights: [] } },
             metadata: { type: 'object', additionalProperties: true, description: 'Additional artifact metadata', example: { tags: ['ai', 'market', 'updated'], format: 'pdf' } }
           }
+        },
+        File: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'File ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a6' },
+            filename: { type: 'string', description: 'Stored filename', example: 'document_20250715_143000.pdf' },
+            originalName: { type: 'string', description: 'Original filename as uploaded', example: 'AI Research Paper.pdf' },
+            mimeType: { type: 'string', description: 'File MIME type', example: 'application/pdf' },
+            size: { type: 'number', description: 'File size in bytes', example: 2048576 },
+            checksum: { type: 'string', description: 'File checksum for integrity verification', example: 'sha256:abc123def456...' },
+            storageUrl: { type: 'string', format: 'url', description: 'File storage URL', example: 'https://storage.example.com/files/document_20250715_143000.pdf' },
+            previewUrl: { type: 'string', format: 'url', description: 'File preview URL (if available)', example: 'https://storage.example.com/previews/document_20250715_143000.jpg' },
+            createdAt: { type: 'string', format: 'date-time', description: 'File upload timestamp', example: '2025-07-15T14:30:00Z' },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional file metadata', example: { tags: ['research', 'ai'], processed: true } },
+            uploader: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+                name: { type: 'string', description: 'User full name', example: 'John Doe' },
+                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+              },
+              required: ['id', 'email'],
+              description: 'User who uploaded the file'
+            }
+          },
+          required: ['id', 'filename', 'originalName', 'mimeType', 'size', 'storageUrl', 'createdAt', 'uploader']
+        },
+        FileDetailed: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'File ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a6' },
+            filename: { type: 'string', description: 'Stored filename', example: 'document_20250715_143000.pdf' },
+            originalName: { type: 'string', description: 'Original filename as uploaded', example: 'AI Research Paper.pdf' },
+            mimeType: { type: 'string', description: 'File MIME type', example: 'application/pdf' },
+            size: { type: 'number', description: 'File size in bytes', example: 2048576 },
+            checksum: { type: 'string', description: 'File checksum for integrity verification', example: 'sha256:abc123def456...' },
+            storageUrl: { type: 'string', format: 'url', description: 'File storage URL', example: 'https://storage.example.com/files/document_20250715_143000.pdf' },
+            previewUrl: { type: 'string', format: 'url', description: 'File preview URL (if available)', example: 'https://storage.example.com/previews/document_20250715_143000.jpg' },
+            createdAt: { type: 'string', format: 'date-time', description: 'File upload timestamp', example: '2025-07-15T14:30:00Z' },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional file metadata', example: { tags: ['research', 'ai'], processed: true } },
+            uploader: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+                name: { type: 'string', description: 'User full name', example: 'John Doe' },
+                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+              },
+              required: ['id', 'email'],
+              description: 'User who uploaded the file'
+            },
+            messages: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', description: 'Message ID', example: 'ck9x8v7b600034l5r8jlkf0a3' },
+                      content: { type: 'string', description: 'Message content', example: 'Here is the research paper...' },
+                      createdAt: { type: 'string', format: 'date-time', description: 'Message creation timestamp', example: '2025-07-15T14:35:00Z' },
+                      thread: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string', description: 'Thread ID', example: 'ck9x8v7b600034l5r8jlkf0a2' },
+                          title: { type: 'string', description: 'Thread title', example: 'AI Research Discussion' }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              description: 'Messages that reference this file'
+            }
+          },
+          required: ['id', 'filename', 'originalName', 'mimeType', 'size', 'storageUrl', 'createdAt', 'uploader']
+        },
+        CreateFileRequest: {
+          type: 'object',
+          properties: {
+            filename: { type: 'string', minLength: 1, maxLength: 255, description: 'Stored filename', example: 'document_20250715_143000.pdf' },
+            originalName: { type: 'string', minLength: 1, maxLength: 255, description: 'Original filename as uploaded', example: 'AI Research Paper.pdf' },
+            mimeType: { type: 'string', minLength: 1, description: 'File MIME type', example: 'application/pdf' },
+            size: { type: 'number', minimum: 0, description: 'File size in bytes', example: 2048576 },
+            checksum: { type: 'string', minLength: 1, description: 'File checksum for integrity verification', example: 'sha256:abc123def456...' },
+            storageUrl: { type: 'string', format: 'url', description: 'File storage URL', example: 'https://storage.example.com/files/document_20250715_143000.pdf' },
+            previewUrl: { type: 'string', format: 'url', description: 'File preview URL (if available)', example: 'https://storage.example.com/previews/document_20250715_143000.jpg' },
+            metadata: { type: 'object', additionalProperties: true, description: 'Additional file metadata', example: { tags: ['research', 'ai'], processed: true } }
+          },
+          required: ['filename', 'originalName', 'mimeType', 'size', 'checksum', 'storageUrl']
+        },
+        Reaction: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'Reaction ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a7' },
+            emoji: { type: 'string', description: 'Emoji used for reaction', example: '👍' },
+            createdAt: { type: 'string', format: 'date-time', description: 'Reaction creation timestamp', example: '2025-07-15T14:40:00Z' },
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+                email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+                name: { type: 'string', description: 'User full name', example: 'John Doe' },
+                nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+                avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+              },
+              required: ['id', 'email'],
+              description: 'User who created the reaction'
+            }
+          },
+          required: ['id', 'emoji', 'createdAt', 'user']
+        },
+        MessageReactions: {
+          type: 'object',
+          properties: {
+            messageId: { type: 'string', description: 'Message ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a3' },
+            reactions: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  emoji: { type: 'string', description: 'Emoji used for reaction', example: '👍' },
+                  count: { type: 'number', description: 'Number of users who reacted with this emoji', example: 3 },
+                  users: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', description: 'User ID (CUID)', example: 'ck9x8v7b600034l5r8jlkf0a1' },
+                        email: { type: 'string', format: 'email', description: 'User email address', example: 'user@example.com' },
+                        name: { type: 'string', description: 'User full name', example: 'John Doe' },
+                        nick: { type: 'string', description: 'User nickname/display name', example: 'johndoe' },
+                        avatarUrl: { type: 'string', format: 'url', description: 'User avatar URL', example: 'https://example.com/avatar.jpg' }
+                      },
+                      required: ['id', 'email']
+                    },
+                    description: 'Users who reacted with this emoji'
+                  }
+                },
+                required: ['emoji', 'count', 'users']
+              },
+              description: 'Reactions grouped by emoji'
+            },
+            total: { type: 'number', description: 'Total number of reactions', example: 5 }
+          },
+          required: ['messageId', 'reactions', 'total']
+        },
+        AddReactionRequest: {
+          type: 'object',
+          properties: {
+            emoji: { type: 'string', minLength: 1, maxLength: 50, description: 'Emoji to add or remove', example: '👍' },
+            action: { type: 'string', enum: ['add', 'remove'], description: 'Action to perform', example: 'add' }
+          },
+          required: ['emoji', 'action']
+        },
+        RemovedReaction: {
+          type: 'object',
+          properties: {
+            removed: { type: 'boolean', example: true, description: 'Indicates the reaction was removed' },
+            emoji: { type: 'string', description: 'Emoji that was removed', example: '👍' },
+            messageId: { type: 'string', description: 'Message ID from which reaction was removed', example: 'ck9x8v7b600034l5r8jlkf0a3' }
+          },
+          required: ['removed', 'emoji', 'messageId']
         },
         ResponseMetadata: {
           type: 'object',
