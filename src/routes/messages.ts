@@ -40,7 +40,8 @@ const messageRoutes = new Hono<{
   Variables: {
     validatedBody: CreateMessageInput | UpdateMessageInput,
     validatedQuery: MessageQuery,
-    validatedParams: MessageParams | ThreadMessageParams
+    validatedParams: MessageParams | ThreadMessageParams,
+    authenticatedUser?: import('../middleware/auth').AuthenticatedUser
   }
 }>();
 
@@ -283,8 +284,20 @@ messageRoutes.post(
         }, getCorrelationId(c.req.raw));
       }
 
-      // For user messages, userId should be provided; for assistant messages it's null
-      const userId = messageData.role === 'USER' ? messageData.userId : null;
+      // For user messages, get userId from authenticated user; for assistant messages it's null
+      const authenticatedUser = c.get('authenticatedUser');
+      const userId = authenticatedUser?.id
+      // messageData.role === 'USER' ? 
+      //   (messageData.userId || authenticatedUser?.id) : null;
+
+      // Validate that USER messages have a userId
+      if (messageData.role === 'USER' && !userId) {
+        return createErrorResponse({
+          status: 400,
+          title: 'Bad Request',
+          detail: 'USER messages require authentication or explicit userId'
+        }, getCorrelationId(c.req.raw));
+      }
 
       const message = await prisma.message.create({
         data: {
