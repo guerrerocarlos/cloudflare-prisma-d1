@@ -33,7 +33,8 @@ const fileRoutes = new Hono<{
   Variables: {
     validatedBody: CreateFileInput,
     validatedQuery: FileQuery,
-    validatedParams: FileParams
+    validatedParams: FileParams,
+    authenticatedUser?: import('../middleware/auth').AuthenticatedUser
   }
 }>();
 
@@ -45,9 +46,20 @@ fileRoutes.get(
     try {
       const prisma = getDatabaseClient(c.env.DB);
       const query = c.get('validatedQuery') as FileQuery;
+      const authenticatedUser = c.get('authenticatedUser');
+
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'Must be authenticated to access files'
+        }, getCorrelationId(c.req.raw));
+      }
       
-      // Build where clause for filtering
-      const where: any = {};
+      // Build where clause for filtering - only show files uploaded by the authenticated user
+      const where: any = {
+        uploadedBy: authenticatedUser.id
+      };
       if (query.mimeType) {
         where.mimeType = { contains: query.mimeType };
       }
@@ -132,9 +144,21 @@ fileRoutes.get(
     try {
       const prisma = getDatabaseClient(c.env.DB);
       const { id } = c.get('validatedParams') as FileParams;
+      const authenticatedUser = c.get('authenticatedUser');
+
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'Must be authenticated to access files'
+        }, getCorrelationId(c.req.raw));
+      }
 
       const file = await prisma.file.findUnique({
-        where: { id },
+        where: { 
+          id,
+          uploadedBy: authenticatedUser.id // Ensure user owns the file
+        },
         select: {
           id: true,
           filename: true,
@@ -179,7 +203,7 @@ fileRoutes.get(
         return createErrorResponse({
           status: 404,
           title: 'File Not Found',
-          detail: `File with ID ${id} was not found`
+          detail: `File with ID ${id} was not found or you don't have access to it`
         }, getCorrelationId(c.req.raw));
       }
 
@@ -199,15 +223,21 @@ fileRoutes.get(
 
 // POST /files - Create new file record
 fileRoutes.post(
-  '/',
+  '/files',
   validateBody(createFileSchema),
   async (c) => {
     try {
       const prisma = getDatabaseClient(c.env.DB);
       const fileData = c.get('validatedBody') as CreateFileInput;
+      const authenticatedUser = c.get('authenticatedUser');
 
-      // For now, we'll use a dummy user ID - in real implementation this would come from auth
-      const uploadedBy = 'dummy-user-id'; // TODO: Replace with actual authenticated user ID
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'Must be authenticated to create files'
+        }, getCorrelationId(c.req.raw));
+      }
 
       const file = await prisma.file.create({
         data: {
@@ -218,7 +248,7 @@ fileRoutes.post(
           checksum: fileData.checksum,
           storageUrl: fileData.storageUrl,
           previewUrl: fileData.previewUrl,
-          uploadedBy: uploadedBy,
+          uploadedBy: authenticatedUser.id,
           metadata: fileData.metadata || {}
         },
         select: {
@@ -266,17 +296,29 @@ fileRoutes.delete(
     try {
       const prisma = getDatabaseClient(c.env.DB);
       const { id } = c.get('validatedParams') as FileParams;
+      const authenticatedUser = c.get('authenticatedUser');
 
-      // Check if file exists
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'Must be authenticated to delete files'
+        }, getCorrelationId(c.req.raw));
+      }
+
+      // Check if file exists and belongs to the authenticated user
       const existingFile = await prisma.file.findUnique({
-        where: { id }
+        where: { 
+          id,
+          uploadedBy: authenticatedUser.id // Ensure user owns the file
+        }
       });
 
       if (!existingFile) {
         return createErrorResponse({
           status: 404,
           title: 'File Not Found',
-          detail: `File with ID ${id} was not found`
+          detail: `File with ID ${id} was not found or you don't have access to it`
         }, getCorrelationId(c.req.raw));
       }
 

@@ -74,7 +74,7 @@ export const createFileSchema = z.object({
   originalName: z.string().min(1).max(255),
   mimeType: z.string().min(1).max(100),
   size: z.number().int().positive().max(104857600), // 100MB max
-  checksum: z.string().regex(/^sha256:[a-f0-9]{64}$/, 'Invalid checksum format'),
+  checksum: z.string().optional(),//.regex(/^sha256:[a-f0-9]{64}$/, 'Invalid checksum format'),
   storageUrl: urlSchema,
   previewUrl: urlSchema.optional(),
   metadata: z.record(z.string(), z.any()).optional()
