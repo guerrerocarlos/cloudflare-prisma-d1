@@ -14,6 +14,7 @@ import {
 } from '../utils/validation';
 import type { AddReactionInput } from '../utils/validation';
 import { validateBody, validateParams } from '../middleware/validation';
+import { authenticateUser, getCurrentUser, type AuthenticatedUser } from '../middleware/auth';
 
 export interface Env {
   DB: D1Database;
@@ -30,7 +31,8 @@ const reactionRoutes = new Hono<{
   Bindings: Env,
   Variables: {
     validatedBody: AddReactionInput,
-    validatedParams: MessageReactionParams
+    validatedParams: MessageReactionParams,
+    authenticatedUser: AuthenticatedUser
   }
 }>();
 
@@ -112,6 +114,7 @@ reactionRoutes.get(
 // POST /messages/:messageId/reactions - Add or remove reaction
 reactionRoutes.post(
   '/messages/:messageId/reactions',
+  authenticateUser,
   validateParams(messageReactionParamsSchema),
   validateBody(addReactionSchema),
   async (c) => {
@@ -119,6 +122,15 @@ reactionRoutes.post(
       const prisma = getDatabaseClient(c.env.DB);
       const { messageId } = c.get('validatedParams') as MessageReactionParams;
       const reactionData = c.get('validatedBody') as AddReactionInput;
+      const user = getCurrentUser(c);
+
+      if (!user) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'User must be authenticated to manage reactions'
+        }, getCorrelationId(c.req.raw));
+      }
 
       // Check if message exists
       const message = await prisma.message.findUnique({
@@ -133,8 +145,27 @@ reactionRoutes.post(
         }, getCorrelationId(c.req.raw));
       }
 
-      // For now, we'll use a dummy user ID - in real implementation this would come from auth
-      const userId = 'dummy-user-id'; // TODO: Replace with actual authenticated user ID
+      const userId = user.id;
+
+      // Ensure the user exists in the database (auto-create if authenticated but not in DB)
+      let dbUser = await prisma.user.findUnique({
+        where: { id: userId }
+      });
+
+      if (!dbUser) {
+        // Create user from authenticated info if not in database
+        dbUser = await prisma.user.create({
+          data: {
+            id: userId,
+            email: user.email,
+            name: user.name,
+            nick: user.nick,
+            avatarUrl: user.avatarUrl,
+            role: user.role === 'ADMIN' ? 'ADMIN' : 'USER',
+            lastLoginAt: new Date()
+          }
+        });
+      }
 
       if (reactionData.action === 'add') {
         // Check if reaction already exists
@@ -222,6 +253,86 @@ reactionRoutes.post(
         status: 500,
         title: 'Internal Server Error',
         detail: 'Failed to manage reaction'
+      }, getCorrelationId(c.req.raw));
+    }
+  }
+);
+
+// DELETE /messages/:messageId/reactions - Remove all user reactions from a message
+reactionRoutes.delete(
+  '/messages/:messageId/reactions',
+  authenticateUser,
+  validateParams(messageReactionParamsSchema),
+  async (c) => {
+    try {
+      const prisma = getDatabaseClient(c.env.DB);
+      const { messageId } = c.get('validatedParams') as MessageReactionParams;
+      const user = getCurrentUser(c);
+
+      if (!user) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'User must be authenticated to manage reactions'
+        }, getCorrelationId(c.req.raw));
+      }
+
+      // Check if message exists
+      const message = await prisma.message.findUnique({
+        where: { id: messageId }
+      });
+
+      if (!message) {
+        return createErrorResponse({
+          status: 404,
+          title: 'Message Not Found',
+          detail: `Message with ID ${messageId} was not found`
+        }, getCorrelationId(c.req.raw));
+      }
+
+      const userId = user.id;
+
+      // Ensure the user exists in the database
+      let dbUser = await prisma.user.findUnique({
+        where: { id: userId }
+      });
+
+      if (!dbUser) {
+        // Create user from authenticated info if not in database
+        dbUser = await prisma.user.create({
+          data: {
+            id: userId,
+            email: user.email,
+            name: user.name,
+            nick: user.nick,
+            avatarUrl: user.avatarUrl,
+            role: user.role === 'ADMIN' ? 'ADMIN' : 'USER',
+            lastLoginAt: new Date()
+          }
+        });
+      }
+
+      // Remove all user reactions for this message
+      const deleteResult = await prisma.reaction.deleteMany({
+        where: {
+          messageId,
+          userId
+        }
+      });
+
+      return createSuccessResponse({
+        removed: true,
+        messageId,
+        count: deleteResult.count
+      }, {
+        correlation_id: getCorrelationId(c.req.raw)
+      });
+    } catch (error) {
+      console.error('Error removing reactions:', error);
+      return createErrorResponse({
+        status: 500,
+        title: 'Internal Server Error',
+        detail: 'Failed to remove reactions'
       }, getCorrelationId(c.req.raw));
     }
   }

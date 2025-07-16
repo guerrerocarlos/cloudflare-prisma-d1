@@ -214,3 +214,29 @@ export type ThreadQuery = z.infer<typeof threadQuerySchema>;
 export type MessageQuery = z.infer<typeof messageQuerySchema>;
 export type ArtifactQuery = z.infer<typeof artifactQuerySchema>;
 export type FileQuery = z.infer<typeof fileQuerySchema>;
+
+// Chat completion schemas
+export const chatMessageSchema = z.object({
+  role: z.enum(['system', 'user', 'assistant']),
+  content: z.string().min(1),
+  name: z.string().optional()
+});
+
+export const chatCompletionRequestSchema = z.object({
+  messages: z.array(chatMessageSchema).min(1),
+  model: z.string().optional(), // Optional - will use default if not provided
+  max_tokens: z.number().min(1).max(4096).optional(),
+  temperature: z.number().min(0).max(2).optional(),
+  top_p: z.number().min(0).max(1).optional(),
+  n: z.number().min(1).max(10).default(1),
+  stream: z.boolean().default(false),
+  stop: z.union([z.string(), z.array(z.string())]).optional(),
+  presence_penalty: z.number().min(-2).max(2).optional(),
+  frequency_penalty: z.number().min(-2).max(2).optional(),
+  logit_bias: z.record(z.string(), z.number()).optional(),
+  user: z.string().optional(),
+  // Custom extension for thread integration
+  thread_id: cuidSchema.optional()
+});
+
+export type ChatCompletionRequestInput = z.infer<typeof chatCompletionRequestSchema>;

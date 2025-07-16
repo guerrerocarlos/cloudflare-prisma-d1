@@ -46,7 +46,8 @@ const openApiDocument = {
     { name: 'Messages', description: 'Message management endpoints' },
     { name: 'Artifacts', description: 'Artifact management endpoints' },
     { name: 'Files', description: 'File management endpoints' },
-    { name: 'Reactions', description: 'Reaction management endpoints' }
+    { name: 'Reactions', description: 'Reaction management endpoints' },
+    { name: 'Completions', description: 'OpenAI-compatible chat completion endpoints' }
   ],
   paths: {
     '/api/v1/health': {
@@ -1518,6 +1519,305 @@ const openApiDocument = {
           '500': { '$ref': '#/components/responses/InternalServerError' }
         }
       }
+    },
+    '/api/v1/chat/completions': {
+      post: {
+        summary: 'Create Chat Completion',
+        description: 'Creates a model response for the given chat conversation. Compatible with OpenAI Chat Completions API.',
+        tags: ['Completions'],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  model: {
+                    type: 'string',
+                    description: 'ID of the model to use',
+                    default: 'gpt-4o',
+                    example: 'gpt-4o'
+                  },
+                  messages: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        role: {
+                          type: 'string',
+                          enum: ['system', 'user', 'assistant', 'tool'],
+                          description: 'The role of the message author'
+                        },
+                        content: {
+                          type: 'string',
+                          description: 'The content of the message'
+                        },
+                        name: {
+                          type: 'string',
+                          description: 'An optional name for the participant'
+                        },
+                        tool_call_id: {
+                          type: 'string',
+                          description: 'Tool call that this message is responding to'
+                        }
+                      },
+                      required: ['role', 'content']
+                    },
+                    minItems: 1,
+                    description: 'A list of messages comprising the conversation so far'
+                  },
+                  max_tokens: {
+                    type: 'integer',
+                    minimum: 1,
+                    description: 'The maximum number of tokens that can be generated in the chat completion'
+                  },
+                  temperature: {
+                    type: 'number',
+                    minimum: 0,
+                    maximum: 2,
+                    default: 1,
+                    description: 'What sampling temperature to use, between 0 and 2'
+                  },
+                  top_p: {
+                    type: 'number',
+                    minimum: 0,
+                    maximum: 1,
+                    default: 1,
+                    description: 'An alternative to sampling with temperature'
+                  },
+                  n: {
+                    type: 'integer',
+                    minimum: 1,
+                    default: 1,
+                    description: 'How many chat completion choices to generate for each input message'
+                  },
+                  stream: {
+                    type: 'boolean',
+                    default: false,
+                    description: 'If set, partial message deltas will be sent'
+                  },
+                  stop: {
+                    oneOf: [
+                      { type: 'string' },
+                      { type: 'array', items: { type: 'string' }, maxItems: 4 }
+                    ],
+                    description: 'Up to 4 sequences where the API will stop generating further tokens'
+                  },
+                  presence_penalty: {
+                    type: 'number',
+                    minimum: -2,
+                    maximum: 2,
+                    default: 0,
+                    description: 'Number between -2.0 and 2.0'
+                  },
+                  frequency_penalty: {
+                    type: 'number',
+                    minimum: -2,
+                    maximum: 2,
+                    default: 0,
+                    description: 'Number between -2.0 and 2.0'
+                  },
+                  logit_bias: {
+                    type: 'object',
+                    additionalProperties: { type: 'number' },
+                    description: 'Modify the likelihood of specified tokens appearing in the completion'
+                  },
+                  user: {
+                    type: 'string',
+                    description: 'A unique identifier representing your end-user'
+                  },
+                  thread_id: {
+                    type: 'string',
+                    description: 'Optional thread ID to associate this completion with'
+                  }
+                },
+                required: ['messages']
+              }
+            }
+          }
+        },
+        responses: {
+          '200': {
+            description: 'Successful completion response',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    id: {
+                      type: 'string',
+                      description: 'A unique identifier for the chat completion'
+                    },
+                    object: {
+                      type: 'string',
+                      enum: ['chat.completion'],
+                      description: 'The object type, which is always "chat.completion"'
+                    },
+                    created: {
+                      type: 'integer',
+                      description: 'The Unix timestamp (in seconds) of when the chat completion was created'
+                    },
+                    model: {
+                      type: 'string',
+                      description: 'The model used for the chat completion'
+                    },
+                    choices: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          index: {
+                            type: 'integer',
+                            description: 'The index of the choice in the list of choices'
+                          },
+                          message: {
+                            type: 'object',
+                            properties: {
+                              role: {
+                                type: 'string',
+                                enum: ['assistant'],
+                                description: 'The role of the author of this message'
+                              },
+                              content: {
+                                type: 'string',
+                                description: 'The contents of the message'
+                              }
+                            },
+                            required: ['role', 'content']
+                          },
+                          finish_reason: {
+                            type: 'string',
+                            enum: ['stop', 'length', 'content_filter', 'tool_calls'],
+                            nullable: true,
+                            description: 'The reason the model stopped generating tokens'
+                          }
+                        },
+                        required: ['index', 'message', 'finish_reason']
+                      }
+                    },
+                    usage: {
+                      type: 'object',
+                      properties: {
+                        prompt_tokens: {
+                          type: 'integer',
+                          description: 'Number of tokens in the prompt'
+                        },
+                        completion_tokens: {
+                          type: 'integer',
+                          description: 'Number of tokens in the generated completion'
+                        },
+                        total_tokens: {
+                          type: 'integer',
+                          description: 'Total number of tokens used in the request'
+                        }
+                      },
+                      required: ['prompt_tokens', 'completion_tokens', 'total_tokens']
+                    },
+                    system_fingerprint: {
+                      type: 'string',
+                      description: 'This fingerprint represents the backend configuration'
+                    }
+                  },
+                  required: ['id', 'object', 'created', 'model', 'choices']
+                }
+              },
+              'text/event-stream': {
+                schema: {
+                  type: 'string',
+                  description: 'Server-sent events stream of completion chunks'
+                }
+              }
+            }
+          },
+          '400': { '$ref': '#/components/responses/BadRequest' },
+          '401': { '$ref': '#/components/responses/Unauthorized' },
+          '429': { '$ref': '#/components/responses/RateLimitExceeded' },
+          '500': { '$ref': '#/components/responses/InternalServerError' },
+          '502': { '$ref': '#/components/responses/BadGateway' }
+        }
+      }
+    },
+    '/api/v1/models': {
+      get: {
+        summary: 'List Available Models',
+        description: 'Lists the currently available models, and provides basic information about each one such as the owner and availability.',
+        tags: ['Completions'],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'List of available models',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    success: { type: 'boolean', example: true },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        object: {
+                          type: 'string',
+                          enum: ['list'],
+                          description: 'The object type, which is always "list"'
+                        },
+                        data: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              id: {
+                                type: 'string',
+                                description: 'The model identifier'
+                              },
+                              object: {
+                                type: 'string',
+                                enum: ['model'],
+                                description: 'The object type, which is always "model"'
+                              },
+                              created: {
+                                type: 'integer',
+                                description: 'The Unix timestamp (in seconds) when the model was created'
+                              },
+                              owned_by: {
+                                type: 'string',
+                                description: 'The organization that owns the model'
+                              },
+                              context_length: {
+                                type: 'integer',
+                                description: 'Maximum context length in tokens'
+                              },
+                              pricing: {
+                                type: 'object',
+                                properties: {
+                                  input: {
+                                    type: 'number',
+                                    description: 'Input token price per 1K tokens'
+                                  },
+                                  output: {
+                                    type: 'number',
+                                    description: 'Output token price per 1K tokens'
+                                  }
+                                }
+                              }
+                            },
+                            required: ['id', 'object', 'created', 'owned_by']
+                          }
+                        }
+                      },
+                      required: ['object', 'data']
+                    },
+                    metadata: { '$ref': '#/components/schemas/ResponseMetadata' }
+                  },
+                  required: ['success', 'data', 'metadata']
+                }
+              }
+            }
+          },
+          '401': { '$ref': '#/components/responses/Unauthorized' },
+          '500': { '$ref': '#/components/responses/InternalServerError' }
+        }
+      }
     }
   },
   components: {
@@ -2017,6 +2317,64 @@ const openApiDocument = {
       },
       InternalServerError: {
         description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: { '$ref': '#/components/schemas/Error' }
+          }
+        }
+      }
+    },
+    responses: {
+      BadRequest: {
+        description: 'Bad request - Invalid input parameters',
+        content: {
+          'application/json': {
+            schema: { '$ref': '#/components/schemas/Error' }
+          }
+        }
+      },
+      Unauthorized: {
+        description: 'Unauthorized - Invalid or missing authentication',
+        content: {
+          'application/json': {
+            schema: { '$ref': '#/components/schemas/Error' }
+          }
+        }
+      },
+      NotFound: {
+        description: 'Resource not found',
+        content: {
+          'application/json': {
+            schema: { '$ref': '#/components/schemas/Error' }
+          }
+        }
+      },
+      Conflict: {
+        description: 'Conflict - Resource already exists or constraint violation',
+        content: {
+          'application/json': {
+            schema: { '$ref': '#/components/schemas/Error' }
+          }
+        }
+      },
+      RateLimitExceeded: {
+        description: 'Rate limit exceeded - Too many requests',
+        content: {
+          'application/json': {
+            schema: { '$ref': '#/components/schemas/Error' }
+          }
+        }
+      },
+      InternalServerError: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: { '$ref': '#/components/schemas/Error' }
+          }
+        }
+      },
+      BadGateway: {
+        description: 'Bad gateway - Error from AI provider',
         content: {
           'application/json': {
             schema: { '$ref': '#/components/schemas/Error' }

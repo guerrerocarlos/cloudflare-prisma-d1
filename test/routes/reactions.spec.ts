@@ -24,7 +24,7 @@ vi.mock('../../src/middleware/auth', () => ({
 
 import { reactionRoutes } from '../../src/routes/reactions';
 import { getDatabaseClient } from '../../src/utils/database';
-import { authenticateUser } from '../../src/middleware/auth';
+import { authenticateUser, getCurrentUser } from '../../src/middleware/auth';
 
 // Create a mock function helper
 function createPrismaMock() {
@@ -127,14 +127,45 @@ describe('Reaction Routes', () => {
 
     // Mock the authentication middleware
     (authenticateUser as any).mockImplementation(async (c: any, next: any) => {
-      c.set('user', { id: 'user123456789012345678901', role: 'USER' });
+      const mockUser = { 
+        id: 'user123456789012345678901', 
+        email: 'test@example.com',
+        name: 'Test User',
+        nick: null,
+        role: 'USER',
+        avatarUrl: null
+      };
+      c.set('authenticatedUser', mockUser);
       await next();
     });
+
+    // Mock getCurrentUser function
+    const mockUser = {
+      id: 'user123456789012345678901', 
+      email: 'test@example.com',
+      name: 'Test User',
+      nick: null,
+      role: 'USER',
+      avatarUrl: null
+    };
+    (getCurrentUser as any).mockReturnValue(mockUser);
   });
 
   beforeEach(() => {
     // Create a new app for each test
     app = new Hono();
+    
+    // Create a mock environment with a DB property
+    const mockEnv = {
+      DB: {} as D1Database
+    };
+    
+    // Add the env to the app
+    app.use('*', async (c, next) => {
+      c.env = mockEnv;
+      await next();
+    });
+    
     app.route('/api/v1', reactionRoutes);
     
     // Reset all mocks
@@ -215,7 +246,8 @@ describe('Reaction Routes', () => {
     it('should add a reaction to a message', async () => {
       const messageId = 'test-message-id';
       const reactionData = {
-        emoji: '👍'
+        emoji: '👍',
+        action: 'add' as const
       };
       
       const createdReaction = {
@@ -228,6 +260,14 @@ describe('Reaction Routes', () => {
       
       // Mock message existence
       mockPrisma.message.findUnique.mockResolvedValue({ id: messageId });
+      
+      // Mock user (for authenticated user check)
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user123456789012345678901',
+        email: 'test@example.com',
+        name: 'Test User'
+      });
+      
       mockPrisma.reaction.findFirst.mockResolvedValue(null); // No existing reaction
       mockPrisma.reaction.create.mockResolvedValue(createdReaction);
       
@@ -253,10 +293,17 @@ describe('Reaction Routes', () => {
     it('should return 404 when message to react to not found', async () => {
       mockPrisma.message.findUnique.mockResolvedValue(null);
       
+      // Mock user (for authenticated user check)
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user123456789012345678901',
+        email: 'test@example.com',
+        name: 'Test User'
+      });
+      
       const response = await app.request('/api/v1/messages/nonexistent/reactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emoji: '👍' })
+        body: JSON.stringify({ emoji: '👍', action: 'add' })
       });
       
       expect(response.status).toBe(404);
@@ -276,13 +323,21 @@ describe('Reaction Routes', () => {
       
       // Mock message and existing reaction
       mockPrisma.message.findUnique.mockResolvedValue({ id: messageId });
+      
+      // Mock user (for authenticated user check)
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user123456789012345678901',
+        email: 'test@example.com',
+        name: 'Test User'
+      });
+      
       mockPrisma.reaction.findFirst.mockResolvedValue(existingReaction);
       mockPrisma.reaction.delete.mockResolvedValue(existingReaction);
       
       const response = await app.request(`/api/v1/messages/${messageId}/reactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emoji: '👍' })
+        body: JSON.stringify({ emoji: '👍', action: 'remove' })
       });
       
       expect(response.status).toBe(200);
@@ -301,7 +356,15 @@ describe('Reaction Routes', () => {
       
       // Mock message existence
       mockPrisma.message.findUnique.mockResolvedValue({ id: messageId });
-      mockPrisma.reaction.delete = vi.fn().mockResolvedValue({ count: 2 });
+      
+      // Mock user (for authenticated user check)
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user123456789012345678901',
+        email: 'test@example.com',
+        name: 'Test User'
+      });
+      
+      mockPrisma.reaction.deleteMany = vi.fn().mockResolvedValue({ count: 2 });
       
       const response = await app.request(`/api/v1/messages/${messageId}/reactions`, {
         method: 'DELETE'
@@ -310,16 +373,23 @@ describe('Reaction Routes', () => {
       expect(response.status).toBe(200);
       const body = await response.json() as any;
       expect(body.success).toBe(true);
-      expect(mockPrisma.reaction.delete).toHaveBeenCalledWith({
+      expect(mockPrisma.reaction.deleteMany).toHaveBeenCalledWith({
         where: {
           messageId,
-          userId: 'test-user-id' // From mock auth
+          userId: 'user123456789012345678901' // From mock auth
         }
       });
     });
     
     it('should return 404 when message not found', async () => {
       mockPrisma.message.findUnique.mockResolvedValue(null);
+      
+      // Mock user (for authenticated user check)
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user123456789012345678901',
+        email: 'test@example.com',
+        name: 'Test User'
+      });
       
       const response = await app.request('/api/v1/messages/nonexistent/reactions', {
         method: 'DELETE'
