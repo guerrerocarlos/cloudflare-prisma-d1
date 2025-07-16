@@ -20,6 +20,7 @@ import { artifactRoutes } from './routes/artifacts';
 import { fileRoutes } from './routes/files';
 import { reactionRoutes } from './routes/reactions';
 import { authRoutes } from './routes/auth';
+import { createChatCompletion, listModels } from './routes/completions';
 
 // OpenAPI documentation routes
 import { api as openApiApp } from './openapi/index';
@@ -28,6 +29,8 @@ export interface Env {
   DB: D1Database;
   JWT_SECRET?: string;
   ALLOWED_DOMAINS?: string;
+  OPENAI_API_KEY?: string;
+  DEFAULT_AI_MODEL?: string;
 }
 
 const app = new Hono<{ 
@@ -156,6 +159,10 @@ app.route('/api/v1', messageRoutes);
 app.route('/api/v1', artifactRoutes);
 app.route('/api/v1', fileRoutes);
 app.route('/api/v1', reactionRoutes);
+
+// OpenAI-compatible completions endpoints
+app.post('/api/v1/chat/completions', createChatCompletion);
+app.get('/api/v1/models', listModels);
 
 // Mount OpenAPI documentation app
 app.route('/', openApiApp);
