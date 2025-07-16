@@ -31,6 +31,7 @@ export interface Env {
   ALLOWED_DOMAINS?: string;
   OPENAI_API_KEY?: string;
   DEFAULT_AI_MODEL?: string;
+  AUTO_COMPLETION_ENABLED?: string;
 }
 
 const app = new Hono<{ 

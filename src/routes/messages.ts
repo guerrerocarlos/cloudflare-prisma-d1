@@ -17,9 +17,14 @@ import {
 } from '../utils/validation';
 import type { CreateMessageInput, UpdateMessageInput, MessageQuery } from '../utils/validation';
 import { validateBody, validateQuery, validateParams } from '../middleware/validation';
+import { CompletionService } from '../services/completion-service';
+import type { ChatMessage } from '../types/completions';
 
 export interface Env {
   DB: D1Database;
+  OPENAI_API_KEY?: string;
+  DEFAULT_AI_MODEL?: string;
+  AUTO_COMPLETION_ENABLED?: string;
 }
 
 // Parameter validation schemas
@@ -34,6 +39,124 @@ const threadMessageParamsSchema = z.object({
 
 type MessageParams = z.infer<typeof messageParamsSchema>;
 type ThreadMessageParams = z.infer<typeof threadMessageParamsSchema>;
+
+// Helper function to convert database messages to chat completion format
+function convertMessagesToChatFormat(messages: any[]): ChatMessage[] {
+  return messages.map(msg => ({
+    role: msg.role.toLowerCase() as 'user' | 'assistant' | 'system',
+    content: msg.content,
+    // Only add name if user exists and sanitize it for OpenAI compatibility
+    ...(msg.user?.name && { 
+      name: sanitizeNameForOpenAI(msg.user.name) 
+    })
+  }));
+}
+
+// Helper function to sanitize name for OpenAI API compatibility
+// OpenAI requires name field to match pattern: ^[^\s<|\\/>]+$
+// (no whitespace, no < | \ / > characters)
+function sanitizeNameForOpenAI(name: string): string {
+  return name
+    .replace(/[\s<|\\/>]+/g, '_')  // Replace invalid characters with underscore
+    .replace(/^_+|_+$/g, '')      // Remove leading/trailing underscores
+    .substring(0, 64) || 'user';   // Limit length and fallback to 'user' if empty
+}
+
+// Helper function to automatically generate completion for user messages
+async function generateAutoCompletion(
+  threadId: string, 
+  userMessage: any, 
+  env: any,
+  authenticatedUser: any
+): Promise<any | null> {
+  try {
+    const prisma = getDatabaseClient(env.DB);
+    
+    // Get recent messages from the thread (last 10 messages for context)
+    const recentMessages = await prisma.message.findMany({
+      where: { threadId },
+      orderBy: { createdAt: 'asc' },
+      take: 10,
+      select: {
+        role: true,
+        content: true,
+        user: {
+          select: {
+            name: true,
+            nick: true
+          }
+        }
+      }
+    });
+
+    // Convert to chat completion format
+    const chatMessages = convertMessagesToChatFormat(recentMessages);
+    
+    // Create completion request
+    const completionRequest = {
+      model: env.DEFAULT_AI_MODEL || 'gpt-4o',
+      messages: chatMessages,
+      temperature: 0.7,
+      max_tokens: 1000,
+      n: 1,
+      stream: false
+    };
+
+    // Generate completion using the service
+    const result = await CompletionService.createCompletion(
+      completionRequest, 
+      authenticatedUser, 
+      env
+    );
+
+    // Create assistant message with the completion
+    if (result?.completion?.choices?.[0]?.message?.content) {
+      const assistantMessage = await prisma.message.create({
+        data: {
+          threadId: threadId,
+          userId: null, // Assistant messages don't have a userId
+          role: 'ASSISTANT',
+          content: result.completion.choices[0].message.content,
+          blocks: [],
+          metadata: {
+            completionId: result.record?.id,
+            model: result.completion.model,
+            usage: {
+              prompt_tokens: result.completion.usage?.prompt_tokens,
+              completion_tokens: result.completion.usage?.completion_tokens,
+              total_tokens: result.completion.usage?.total_tokens
+            }
+          }
+        },
+        select: {
+          id: true,
+          role: true,
+          content: true,
+          blocks: true,
+          createdAt: true,
+          updatedAt: true,
+          metadata: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              nick: true,
+              avatarUrl: true
+            }
+          }
+        }
+      });
+
+      return assistantMessage;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error generating auto completion:', error);
+    return null;
+  }
+}
 
 const messageRoutes = new Hono<{ 
   Bindings: Env,
@@ -336,7 +459,29 @@ messageRoutes.post(
           });
         }
 
-      return createSuccessResponse(message, {
+      // Auto-generate completion for user messages
+      let assistantMessage = null;
+      if (messageData.role === 'USER' && authenticatedUser && c.env.AUTO_COMPLETION_ENABLED !== 'false') {
+        try {
+          assistantMessage = await generateAutoCompletion(
+            threadId, 
+            message, 
+            c.env, 
+            authenticatedUser
+          );
+        } catch (error) {
+          console.error('Error generating auto completion:', error);
+          // Continue without failing the entire request
+        }
+      }
+
+      // Return both the user message and assistant message if generated
+      const response = {
+        userMessage: message,
+        ...(assistantMessage && { assistantMessage })
+      };
+
+      return createSuccessResponse(response, {
         correlation_id: getCorrelationId(c.req.raw)
       });
     } catch (error) {

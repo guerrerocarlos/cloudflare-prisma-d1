@@ -91,11 +91,19 @@ For production environments, consider:
 - **Performance metrics**: Monitor response times and throughput
 - **Health checks**: Regular endpoint availability monitoring
 
-## 🗄️ Database Schema Managementch messages with UI blocks and attachments  
+## 🗄️ Database Schema Management
+
+The Experience Layer Backend includes a comprehensive **multi-entity database schema** designed for modern conversation-based applications with AI integration:
+
+- **User Management**: Complete user profiles and authentication
+- **Thread System**: Organized conversations with metadata and context
+- **Messaging**: Rich messages with UI blocks and attachments  
 - **Artifact Management**: Structured outputs (insights, reports, dashboards)
 - **File Handling**: Secure upload/download with previews
-- **Authentication**: JWT-based authentication
+- **Authentication**: JWT-based authentication with role-based access control
+- **AI Integration**: OpenAI-compatible chat completions with auto-responses
 - **Real-time Features**: Server-Sent Events for live updates
+- **Completion Analytics**: Token usage tracking and conversation memory
 
 ## 🚀 Quick Start
 
@@ -405,9 +413,353 @@ POST   /api/v1/threads/:id/artifacts # Create artifact ✅
 PUT    /api/v1/artifacts/:id  # Update artifact ✅
 DELETE /api/v1/artifacts/:id  # Delete artifact ✅
 
+# OpenAI-Compatible Completions API ✅
+POST   /api/v1/chat/completions      # Create chat completion ✅
+GET    /api/v1/models                # List available AI models ✅
+
 # Legacy endpoints for backward compatibility ✅
 GET    /users                 # Legacy users endpoint ✅
 POST   /users                 # Legacy user creation ✅
+```
+
+## 🤖 OpenAI-Compatible Completions API
+
+### Overview
+
+The backend now includes a **fully OpenAI-compatible chat completions API** that allows you to:
+- Generate AI responses using OpenAI's models
+- Maintain conversation context and memory
+- Store completion records for analytics
+- Auto-generate assistant responses to user messages
+
+### Key Features
+
+- **🔌 OpenAI Compatible**: Drop-in replacement for OpenAI's `/v1/chat/completions` endpoint
+- **🚀 Auto-Completion**: Automatically generate AI responses when users send messages
+- **💾 Conversation Memory**: Uses thread history for contextual responses
+- **📊 Usage Tracking**: Stores completion records with token usage metrics
+- **🎛️ Configurable**: Support for all OpenAI parameters (temperature, max_tokens, etc.)
+- **🔄 Streaming Support**: Real-time streaming responses (SSE)
+- **🔐 Secure**: JWT authentication required for all completion requests
+
+### Environment Variables
+
+Set these environment variables for full functionality:
+
+```bash
+# Required for real AI responses
+wrangler secret put OPENAI_API_KEY
+
+# Optional configuration
+wrangler secret put DEFAULT_AI_MODEL        # default: "gpt-4o"
+wrangler secret put AUTO_COMPLETION_ENABLED # default: "true", set to "false" to disable
+```
+
+### API Endpoints
+
+#### POST /api/v1/chat/completions
+
+Create a chat completion with OpenAI-compatible parameters.
+
+**Request:**
+```bash
+curl -X POST \
+  'https://dev-experience.rpotential.dev/api/v1/chat/completions' \
+  -H 'Authorization: Bearer YOUR_JWT_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "gpt-4o",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant."
+      },
+      {
+        "role": "user", 
+        "content": "What is artificial intelligence?"
+      }
+    ],
+    "temperature": 0.7,
+    "max_tokens": 1000,
+    "stream": false,
+    "thread_id": "optional_thread_id"
+  }'
+```
+
+**Response:**
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "gpt-4o",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Artificial intelligence (AI) refers to..."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 56,
+    "completion_tokens": 31,
+    "total_tokens": 87
+  }
+}
+```
+
+**Supported Parameters:**
+- `model` (string, optional): AI model to use (default: "gpt-4o")
+- `messages` (array, required): Conversation messages
+- `temperature` (number, optional): Sampling temperature (0-2)
+- `max_tokens` (integer, optional): Maximum tokens to generate
+- `top_p` (number, optional): Top-p sampling parameter
+- `n` (integer, optional): Number of completions to generate
+- `stream` (boolean, optional): Enable streaming responses
+- `stop` (string/array, optional): Stop sequences
+- `presence_penalty` (number, optional): Presence penalty (-2 to 2)
+- `frequency_penalty` (number, optional): Frequency penalty (-2 to 2)
+- `logit_bias` (object, optional): Token likelihood modifiers
+- `user` (string, optional): User identifier
+- `thread_id` (string, optional): Associate with specific thread
+
+#### GET /api/v1/models
+
+List available AI models.
+
+**Request:**
+```bash
+curl -X GET \
+  'https://dev-experience.rpotential.dev/api/v1/models' \
+  -H 'Authorization: Bearer YOUR_JWT_TOKEN'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "object": "list",
+    "data": [
+      {
+        "id": "gpt-4o",
+        "object": "model",
+        "created": 1677649963,
+        "owned_by": "openai",
+        "context_length": 128000
+      },
+      {
+        "id": "gpt-4o-mini",
+        "object": "model", 
+        "created": 1677649963,
+        "owned_by": "openai",
+        "context_length": 128000
+      }
+    ]
+  }
+}
+```
+
+### Auto-Completion Feature
+
+When users create messages in threads, the system automatically generates AI responses:
+
+#### How it Works
+
+1. **User sends message** → Creates message in thread
+2. **System analyzes context** → Gets last 10 messages for conversation history
+3. **Generates completion** → Calls OpenAI API with conversation context
+4. **Creates assistant message** → Stores AI response as new message
+5. **Returns both messages** → User gets their message + AI response
+
+#### API Response with Auto-Completion
+
+When creating a user message, you get both messages back:
+
+**Request:**
+```bash
+curl -X POST \
+  'https://dev-experience.rpotential.dev/api/v1/threads/{threadId}/messages' \
+  -H 'Authorization: Bearer YOUR_JWT_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "role": "USER",
+    "content": "What can you tell me about artificial intelligence?"
+  }'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "userMessage": {
+      "id": "user_message_id",
+      "role": "USER",
+      "content": "What can you tell me about artificial intelligence?",
+      "createdAt": "2025-07-16T19:30:00.000Z",
+      "user": {
+        "id": "user_id",
+        "name": "John Doe",
+        "email": "john@example.com"
+      }
+    },
+    "assistantMessage": {
+      "id": "assistant_message_id",
+      "role": "ASSISTANT", 
+      "content": "Artificial intelligence (AI) is a fascinating field...",
+      "createdAt": "2025-07-16T19:30:01.000Z",
+      "user": null,
+      "metadata": {
+        "completionId": "completion_record_id",
+        "model": "gpt-4o",
+        "usage": {
+          "prompt_tokens": 25,
+          "completion_tokens": 150,
+          "total_tokens": 175
+        }
+      }
+    }
+  }
+}
+```
+
+#### Configuration Options
+
+- **Enable/Disable**: Set `AUTO_COMPLETION_ENABLED=false` to disable auto-completion
+- **Model Selection**: Use `DEFAULT_AI_MODEL` to set default model (defaults to "gpt-4o")
+- **Context Length**: Uses last 10 messages from thread for conversation context
+- **Error Handling**: Graceful degradation - if completion fails, user message is still created
+
+### Database Integration
+
+#### Completion Records
+
+All completions are stored in the `completions` table with:
+- Full request/response data
+- Token usage metrics
+- Model information
+- Relationships to users, threads, and messages
+- Timestamps for analytics
+
+#### Message Metadata
+
+Assistant messages include completion metadata:
+```json
+{
+  "completionId": "completion_record_id",
+  "model": "gpt-4o", 
+  "usage": {
+    "prompt_tokens": 25,
+    "completion_tokens": 150,
+    "total_tokens": 175
+  }
+}
+```
+
+### Streaming Support
+
+For real-time responses, use `stream: true`:
+
+**Request:**
+```bash
+curl -X POST \
+  'https://dev-experience.rpotential.dev/api/v1/chat/completions' \
+  -H 'Authorization: Bearer YOUR_JWT_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "gpt-4o",
+    "messages": [{"role": "user", "content": "Hello!"}],
+    "stream": true
+  }'
+```
+
+**Response (Server-Sent Events):**
+```
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4o","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4o","choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-4o","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+```
+
+### Available Models
+
+The system supports all current OpenAI models:
+
+- **GPT-4o** (Default): Latest flagship model with 128K context
+- **GPT-4o-mini**: Fast, cost-effective model for simple tasks  
+- **o1-preview**: Reasoning model for complex problems
+- **o1-mini**: Faster reasoning model
+- **GPT-4 Turbo**: Previous generation flagship model
+- **GPT-3.5 Turbo**: Legacy model for backwards compatibility
+
+### Error Handling
+
+Comprehensive error handling for:
+- **401 Unauthorized**: Missing or invalid JWT token
+- **400 Bad Request**: Invalid request parameters or missing required fields
+- **429 Rate Limited**: Too many requests (when rate limiting is enabled)
+- **502 Bad Gateway**: OpenAI API errors or failures
+- **500 Internal Server Error**: Unexpected server errors
+
+### Testing the API
+
+#### Basic Completion Test
+```bash
+curl -X POST \
+  'https://dev-experience.rpotential.dev/api/v1/chat/completions' \
+  -H 'Authorization: Bearer YOUR_JWT_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "gpt-4o-mini",
+    "messages": [
+      {"role": "user", "content": "Say hello in a creative way"}
+    ],
+    "temperature": 0.9,
+    "max_tokens": 50
+  }'
+```
+
+#### Auto-Completion Test
+```bash
+# Create a thread first
+THREAD_ID=$(curl -X POST \
+  'https://dev-experience.rpotential.dev/api/v1/threads' \
+  -H 'Authorization: Bearer YOUR_JWT_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{"title": "AI Discussion"}' | jq -r '.data.id')
+
+# Send a message (will auto-generate response)
+curl -X POST \
+  "https://dev-experience.rpotential.dev/api/v1/threads/$THREAD_ID/messages" \
+  -H 'Authorization: Bearer YOUR_JWT_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "role": "USER",
+    "content": "Explain machine learning in simple terms"
+  }'
+```
+
+### Migration Information
+
+The completions feature required a new database table:
+
+**Migration:** `0005_add_completions_table.sql`
+- Creates `completions` table with relationships to users, threads, and messages
+- Adds unique constraints and indexes for performance
+- Supports storing full OpenAI request/response data
+
+To apply the migration:
+```bash
+npm run db:migrate:apply:local   # For local development
+npm run db:migrate:apply:remote  # For production deployment
+```
 ```
 
 **Key Achievements**:
@@ -429,7 +781,56 @@ POST   /users                 # Legacy user creation ✅
 - User management and authentication ✅
 - Error handling and validation ✅
 
-### Phase 3: Testing & Security Hardening 🧪 **NEXT PHASE**
+### Phase 3: OpenAI Integration & Auto-Completion 🤖 ✅ **COMPLETED**
+
+**Objective**: Implement OpenAI-compatible chat completions API with automatic response generation.
+
+**Deliverables**:
+- ✅ OpenAI-compatible `/api/v1/chat/completions` endpoint
+- ✅ Real OpenAI API integration with streaming support
+- ✅ Completion record storage and analytics tracking
+- ✅ Auto-completion for user messages
+- ✅ Available models endpoint (`/api/v1/models`)
+- ✅ Conversation context and memory management
+- ✅ Token usage tracking and cost monitoring
+- ✅ Comprehensive error handling and fallback mechanisms
+- ✅ Environment-based configuration for model selection
+
+**Key Features**:
+- **OpenAI Compatible**: Drop-in replacement for OpenAI's `/v1/chat/completions` endpoint ✅
+- **Auto-Completion**: Automatically generate AI responses when users send messages ✅
+- **Conversation Memory**: Uses thread history (last 10 messages) for contextual responses ✅
+- **Usage Tracking**: Stores completion records with token usage metrics ✅
+- **Streaming Support**: Real-time streaming responses (SSE) ✅
+- **Model Management**: Support for all current OpenAI models (GPT-4o, o1, etc.) ✅
+- **Configuration**: Environment-based model and feature toggles ✅
+
+**API Endpoints**:
+```
+POST   /api/v1/chat/completions  # Create chat completion ✅
+GET    /api/v1/models            # List available AI models ✅
+```
+
+**Database Integration**:
+- **Completion Records**: Full request/response storage with relationships ✅
+- **Message Metadata**: Assistant messages include completion tracking ✅
+- **Token Analytics**: Usage metrics for cost monitoring and optimization ✅
+
+**Auto-Completion Workflow**:
+1. User creates message → Stored in thread ✅
+2. System analyzes conversation context ✅
+3. Generates AI completion using OpenAI API ✅
+4. Creates assistant message with completion metadata ✅
+5. Returns both user and assistant messages ✅
+
+**Environment Configuration**:
+```bash
+OPENAI_API_KEY              # Required for real AI responses
+DEFAULT_AI_MODEL            # default: "gpt-4o"
+AUTO_COMPLETION_ENABLED     # default: "true"
+```
+
+### Phase 4: Testing & Security Hardening 🧪 **NEXT PHASE**
 
 **Objective**: Implement comprehensive testing suite and enhance security features.
 
@@ -459,7 +860,7 @@ POST   /users                 # Legacy user creation ✅
 - [ ] API key management for external integrations
 - [ ] Audit logging for security events
 
-### Phase 4: Authentication & OAuth Integration 🔒 **PLANNED**
+### Phase 5: Authentication & OAuth Integration 🔒 **PLANNED**
 
 **Objective**: Implement secure authentication and authorization mechanisms.
 
@@ -472,7 +873,7 @@ POST   /users                 # Legacy user creation ✅
 - [ ] Security headers and CORS configuration
 - [ ] API key management for external integrations
 
-### Phase 4: Authentication & OAuth Integration 🔒 **PARTIALLY COMPLETED**
+### Phase 5: Authentication & OAuth Integration 🔒 **PARTIALLY COMPLETED**
 
 **Objective**: Implement production-ready authentication and authorization mechanisms.
 
@@ -495,7 +896,7 @@ POST   /users                 # Legacy user creation ✅
 - **Data Protection**: Advanced input sanitization and SQL injection prevention (planned)
 - **Audit Logging**: Comprehensive security events and access logs (planned)
 
-### Phase 5: Message System & UI Blocks 💬 **PLANNED**
+### Phase 6: Message System & UI Blocks 💬 **PLANNED**
 
 **Objective**: Implement rich messaging with UI blocks and real-time capabilities.
 
@@ -515,7 +916,7 @@ POST   /users                 # Legacy user creation ✅
 - **Layout Blocks**: Sections, dividers, headers
 - **Data Blocks**: Tables, charts, key-value displays
 
-### Phase 6: File Management 📁 **PLANNED**
+### Phase 7: File Management 📁 **PLANNED**
 
 **Objective**: Implement secure file upload, storage, and management system.
 
@@ -535,7 +936,7 @@ POST   /users                 # Legacy user creation ✅
 - **Access Control**: Thread-based and user-based permissions
 - **Metadata**: Extraction and indexing for search
 
-### Phase 7: Artifacts & Interactive Features 🎯 **PLANNED**
+### Phase 8: Artifacts & Interactive Features 🎯 **PLANNED**
 
 **Objective**: Build structured artifact management with interactive capabilities.
 
@@ -555,7 +956,7 @@ POST   /users                 # Legacy user creation ✅
 - **PDFs**: Generated documents
 - **References**: Knowledge base entries
 
-### Phase 8: Real-time & Observability 📡 **PLANNED**
+### Phase 9: Real-time & Observability 📡 **PLANNED**
 
 **Objective**: Add real-time capabilities and comprehensive monitoring.
 
@@ -580,7 +981,7 @@ POST   /users                 # Legacy user creation ✅
 - **Tracing**: End-to-end request tracing
 - **Alerts**: Automated incident detection
 
-### Phase 9: Production Readiness 🚀 **PLANNED**
+### Phase 10: Production Readiness 🚀 **PLANNED**
 
 **Objective**: Optimize for production deployment with enterprise-grade features.
 
