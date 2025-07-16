@@ -40,7 +40,8 @@ const artifactRoutes = new Hono<{
   Variables: {
     validatedBody: CreateArtifactInput | UpdateArtifactInput,
     validatedQuery: ArtifactQuery,
-    validatedParams: ArtifactParams | ThreadArtifactParams
+    validatedParams: ArtifactParams | ThreadArtifactParams,
+    authenticatedUser?: import('../middleware/auth').AuthenticatedUser
   }
 }>();
 
@@ -52,9 +53,20 @@ artifactRoutes.get(
     try {
       const prisma = getDatabaseClient(c.env.DB);
       const query = c.get('validatedQuery') as ArtifactQuery;
+      const authenticatedUser = c.get('authenticatedUser');
+
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'Must be authenticated to access artifacts'
+        }, getCorrelationId(c.req.raw));
+      }
       
-      // Build where clause for filtering
-      const where: any = {};
+      // Build where clause for filtering - only show artifacts owned by the authenticated user
+      const where: any = {
+        userId: authenticatedUser.id
+      };
       if (query.type) {
         where.type = query.type;
       }
@@ -142,23 +154,36 @@ artifactRoutes.get(
       const prisma = getDatabaseClient(c.env.DB);
       const { threadId } = c.get('validatedParams') as ThreadArtifactParams;
       const query = c.get('validatedQuery') as ArtifactQuery;
+      const authenticatedUser = c.get('authenticatedUser');
+
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'Must be authenticated to access artifacts'
+        }, getCorrelationId(c.req.raw));
+      }
       
-      // Check if thread exists
+      // Check if thread exists and belongs to the authenticated user
       const thread = await prisma.thread.findUnique({
-        where: { id: threadId }
+        where: { 
+          id: threadId,
+          userId: authenticatedUser.id // Ensure user owns the thread
+        }
       });
 
       if (!thread) {
         return createErrorResponse({
           status: 404,
           title: 'Thread Not Found',
-          detail: `Thread with ID ${threadId} was not found`
+          detail: `Thread with ID ${threadId} was not found or you don't have access to it`
         }, getCorrelationId(c.req.raw));
       }
 
-      // Build where clause for filtering
+      // Build where clause for filtering - only artifacts in this thread and owned by the user
       const where: any = {
-        threadId: threadId
+        threadId: threadId,
+        userId: authenticatedUser.id // Ensure user owns the artifacts
       };
       if (query.type) {
         where.type = query.type;
@@ -220,9 +245,21 @@ artifactRoutes.get(
     try {
       const prisma = getDatabaseClient(c.env.DB);
       const { id } = c.get('validatedParams') as ArtifactParams;
+      const authenticatedUser = c.get('authenticatedUser');
+
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'Must be authenticated to access artifacts'
+        }, getCorrelationId(c.req.raw));
+      }
 
       const artifact = await prisma.artifact.findUnique({
-        where: { id },
+        where: { 
+          id,
+          userId: authenticatedUser.id // Ensure user owns the artifact
+        },
         select: {
           id: true,
           type: true,
@@ -257,7 +294,7 @@ artifactRoutes.get(
         return createErrorResponse({
           status: 404,
           title: 'Artifact Not Found',
-          detail: `Artifact with ID ${id} was not found`
+          detail: `Artifact with ID ${id} was not found or you don't have access to it`
         }, getCorrelationId(c.req.raw));
       }
 
@@ -285,27 +322,36 @@ artifactRoutes.post(
       const prisma = getDatabaseClient(c.env.DB);
       const { threadId } = c.get('validatedParams') as ThreadArtifactParams;
       const artifactData = c.get('validatedBody') as CreateArtifactInput;
+      const authenticatedUser = c.get('authenticatedUser');
 
-      // Check if thread exists
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'Must be authenticated to create artifacts'
+        }, getCorrelationId(c.req.raw));
+      }
+
+      // Check if thread exists and belongs to the authenticated user
       const thread = await prisma.thread.findUnique({
-        where: { id: threadId }
+        where: { 
+          id: threadId,
+          userId: authenticatedUser.id // Ensure user owns the thread
+        }
       });
 
       if (!thread) {
         return createErrorResponse({
           status: 404,
           title: 'Thread Not Found',
-          detail: `Thread with ID ${threadId} was not found`
+          detail: `Thread with ID ${threadId} was not found or you don't have access to it`
         }, getCorrelationId(c.req.raw));
       }
-
-      // For now, we'll use a dummy user ID - in real implementation this would come from auth
-      const userId = 'dummy-user-id'; // TODO: Replace with actual authenticated user ID
 
       const artifact = await prisma.artifact.create({
         data: {
           threadId: threadId,
-          userId: userId,
+          userId: authenticatedUser.id,
           type: artifactData.type,
           title: artifactData.title,
           description: artifactData.description,
@@ -358,17 +404,29 @@ artifactRoutes.put(
       const prisma = getDatabaseClient(c.env.DB);
       const { id } = c.get('validatedParams') as ArtifactParams;
       const updateData = c.get('validatedBody') as UpdateArtifactInput;
+      const authenticatedUser = c.get('authenticatedUser');
 
-      // Check if artifact exists
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'Must be authenticated to update artifacts'
+        }, getCorrelationId(c.req.raw));
+      }
+
+      // Check if artifact exists and belongs to the authenticated user
       const existingArtifact = await prisma.artifact.findUnique({
-        where: { id }
+        where: { 
+          id,
+          userId: authenticatedUser.id // Ensure user owns the artifact
+        }
       });
 
       if (!existingArtifact) {
         return createErrorResponse({
           status: 404,
           title: 'Artifact Not Found',
-          detail: `Artifact with ID ${id} was not found`
+          detail: `Artifact with ID ${id} was not found or you don't have access to it`
         }, getCorrelationId(c.req.raw));
       }
 
@@ -423,17 +481,29 @@ artifactRoutes.delete(
     try {
       const prisma = getDatabaseClient(c.env.DB);
       const { id } = c.get('validatedParams') as ArtifactParams;
+      const authenticatedUser = c.get('authenticatedUser');
 
-      // Check if artifact exists
+      if (!authenticatedUser) {
+        return createErrorResponse({
+          status: 401,
+          title: 'Authentication Required',
+          detail: 'Must be authenticated to delete artifacts'
+        }, getCorrelationId(c.req.raw));
+      }
+
+      // Check if artifact exists and belongs to the authenticated user
       const existingArtifact = await prisma.artifact.findUnique({
-        where: { id }
+        where: { 
+          id,
+          userId: authenticatedUser.id // Ensure user owns the artifact
+        }
       });
 
       if (!existingArtifact) {
         return createErrorResponse({
           status: 404,
           title: 'Artifact Not Found',
-          detail: `Artifact with ID ${id} was not found`
+          detail: `Artifact with ID ${id} was not found or you don't have access to it`
         }, getCorrelationId(c.req.raw));
       }
 
