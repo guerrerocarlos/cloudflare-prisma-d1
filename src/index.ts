@@ -41,9 +41,30 @@ const app = new Hono<{
 // Middleware
 app.use('*', logger());
 app.use('*', cors({
-  origin: ['http://localhost:3000', 'https://*.rpotential.dev'],
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Correlation-ID'],
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: (origin) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return origin;
+    
+    // Allow any localhost on any port for development
+    if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
+      return origin;
+    }
+    
+    // Allow 127.0.0.1 on any port for development
+    if (origin.startsWith('http://127.0.0.1:') || origin.startsWith('https://127.0.0.1:')) {
+      return origin;
+    }
+    
+    // Allow rpotential.dev subdomains
+    if (origin.endsWith('.rpotential.dev') || origin === 'https://rpotential.dev') {
+      return origin;
+    }
+    
+    // Deny all other origins
+    return null;
+  },
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Correlation-ID', 'Accept', 'Cookie'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   exposeHeaders: ['X-Correlation-ID'],
   maxAge: 86400,
   credentials: true

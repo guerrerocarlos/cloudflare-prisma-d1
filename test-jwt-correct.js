@@ -36,7 +36,7 @@ const payload = {
   iat: Math.floor(Date.now() / 1000)
 };
 
-const secret = 'pqlnmpqlnm'; // Correct JWT secret
+const secret = 'your-jwt-secret-key'; // Local development JWT secret
 const token = createJWT(payload, secret);
 
 console.log('JWT Token with correct secret:');
