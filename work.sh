@@ -1,0 +1,17 @@
+curl 'https://dev-experience.rpotential.dev/api/v1/auth/login' \
+  -H 'accept: application/json, text/plain, */*' \
+  -H 'accept-language: en-US,en;q=0.9,es-ES;q=0.8,es;q=0.7' \
+  -H 'cache-control: no-cache' \
+  -b 'rpotential_auth=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMTcxNTc2ODM0OTA3OTcyMzA0MzgiLCJlbWFpbCI6InNhbnRpYWdvLnBhY2hvbkBnbG9iYW50LmNvbSIsIm5hbWUiOiJTYW50aWFnbyBQYWNob24gRGlheiIsImRvbWFpbiI6Imdsb2JhbnQuY29tIiwiaWF0IjoxNzUyNzcxMjk0LCJleHAiOjE3NTI4NTc2OTQsImlzcyI6ImF1dGgucnBvdGVudGlhbC5kZXYifQ.COVVsGzDOVuv2J2h9VzUfXuyb3qDGGKA-7exi--jfiE' \
+  -H 'dnt: 1' \
+  -H 'origin: https://experience.rpotential.dev' \
+  -H 'pragma: no-cache' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://experience.rpotential.dev/' \
+  -H 'sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-site' \
+  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36'

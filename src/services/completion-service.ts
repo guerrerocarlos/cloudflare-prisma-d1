@@ -19,10 +19,12 @@ export class CompletionService {
     env: any
   ): Promise<{ completion: ChatCompletionResponse; record: CompletionRecord }> {
     const prisma = getDatabaseClient(env.DB);
-    const provider = createAIProvider(env);
     
     // Set default model if not provided
     const model = request.model || env.DEFAULT_AI_MODEL || 'gpt-4o';
+    
+    // Create provider based on model
+    const provider = createAIProvider(env, model);
     
     // Generate unique request ID
     const requestId = crypto.randomUUID();
@@ -111,10 +113,11 @@ export class CompletionService {
     user: AuthenticatedUser,
     env: any
   ): AsyncGenerator<ChatCompletionStreamChunk> {
-    const provider = createAIProvider(env);
-    
     // Set default model if not provided
     const model = request.model || env.DEFAULT_AI_MODEL || 'gpt-4o';
+    
+    // Create provider based on model
+    const provider = createAIProvider(env, model);
     
     // Convert request to provider format
     const providerRequest: ChatCompletionRequest = {
@@ -195,8 +198,15 @@ export class CompletionService {
   }
   
   static async getAvailableModels(env: any) {
-    const provider = createAIProvider(env);
-    return provider.getSupportedModels();
+    const openAIProvider = createAIProvider(env);
+    const azureProvider = createAIProvider(env, 'azure/SimpleAgent');
+    
+    const allModels = [
+      ...openAIProvider.getSupportedModels(),
+      ...azureProvider.getSupportedModels()
+    ];
+    
+    return allModels;
   }
   
   static async getCompletion(id: string, user: AuthenticatedUser, env: any) {

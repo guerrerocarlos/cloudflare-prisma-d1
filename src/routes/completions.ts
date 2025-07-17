@@ -118,10 +118,8 @@ export async function listModels(c: Context) {
       });
     }
 
-    // Create AI provider to get supported models
-    const env = c.env;
-    const aiProvider = createAIProvider(env);
-    const models = aiProvider.getSupportedModels();
+    // Get available models from completion service
+    const models = await CompletionService.getAvailableModels(c.env);
 
     // Transform to OpenAI API format
     const modelList = {
