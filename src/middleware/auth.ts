@@ -24,6 +24,67 @@ export interface JWTPayload {
 }
 
 /**
+ * Get or create user in database based on JWT payload
+ */
+async function getOrCreateUser(payload: JWTPayload, db: D1Database): Promise<AuthenticatedUser> {
+  const { getDatabaseClient } = await import('../utils/database');
+  const prisma = getDatabaseClient(db);
+  
+  let dbUser = await prisma.user.findUnique({
+    where: { id: payload.sub },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      nick: true,
+      role: true,
+      avatarUrl: true
+    }
+  });
+
+  // If user doesn't exist, create them
+  if (!dbUser) {
+    dbUser = await prisma.user.create({
+      data: {
+        id: payload.sub,
+        email: payload.email,
+        name: payload.name || null,
+        nick: null,
+        role: payload.role || 'USER',
+        avatarUrl: payload.avatar_url || null,
+        lastLoginAt: new Date()
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        nick: true,
+        role: true,
+        avatarUrl: true
+      }
+    });
+    
+    console.log('Created new user:', dbUser.id, dbUser.email);
+  } else {
+    // Update lastLoginAt for existing users
+    await prisma.user.update({
+      where: { id: dbUser.id },
+      data: { lastLoginAt: new Date() }
+    }).catch(err => console.error('Error updating lastLoginAt:', err));
+  }
+
+  return {
+    id: dbUser.id,
+    email: dbUser.email,
+    name: dbUser.name,
+    nick: dbUser.nick,
+    role: dbUser.role,
+    avatarUrl: dbUser.avatarUrl,
+    domain: payload.domain
+  };
+}
+
+/**
  * Extract user information from JWT cookie (rpotential_auth)
  */
 export async function authenticateUser(c: Context, next: Next) {
@@ -85,21 +146,21 @@ export async function authenticateUser(c: Context, next: Next) {
       }, getCorrelationId(c.req.raw));
     }
 
-    // Set the authenticated user in the context
-    const user: AuthenticatedUser = {
-      id: payload.sub,
-      email: payload.email,
-      name: payload.name || null,
-      nick: null, // Can be extended if available in JWT
-      role: payload.role || 'USER', // Default role if not in JWT
-      avatarUrl: payload.avatar_url || null,
-      domain: payload.domain
-    };
-
-    c.set('authenticatedUser', user);
-    c.set('jwtPayload', payload);
-    
-    await next();
+    // Get or create the user in the database
+    try {
+      const user = await getOrCreateUser(payload, c.env.DB);
+      c.set('authenticatedUser', user);
+      c.set('jwtPayload', payload);
+      
+      await next();
+    } catch (dbError) {
+      console.error('Database error during user creation/retrieval:', dbError);
+      return createErrorResponse({
+        status: 500,
+        title: 'Database Error',
+        detail: 'Failed to create or retrieve user from database'
+      }, getCorrelationId(c.req.raw));
+    }
   } catch (error) {
     console.error('Authentication error:', error);
     return createErrorResponse({
@@ -135,18 +196,15 @@ export async function optionalAuth(c: Context, next: Next) {
               ['rpotential.ai', 'globant.com'];
             
             if (allowedDomains.includes(payload.domain)) {
-              const user: AuthenticatedUser = {
-                id: payload.sub,
-                email: payload.email,
-                name: payload.name || null,
-                nick: null,
-                role: payload.role || 'USER',
-                avatarUrl: payload.avatar_url || null,
-                domain: payload.domain
-              };
-
-              c.set('authenticatedUser', user);
-              c.set('jwtPayload', payload);
+              // Get or create the user in the database for optional auth too
+              try {
+                const user = await getOrCreateUser(payload, c.env.DB);
+                c.set('authenticatedUser', user);
+                c.set('jwtPayload', payload);
+              } catch (dbError) {
+                console.error('Database error in optional auth:', dbError);
+                // For optional auth, we don't fail the request on database errors
+              }
             }
           }
         }
@@ -281,21 +339,18 @@ async function verifyAuthFromRequest(c: Context): Promise<{
             return { isValid: false, error: 'Domain not allowed' };
           }
 
-          const user: AuthenticatedUser = {
-            id: payload.sub,
-            email: payload.email,
-            name: payload.name || null,
-            nick: null,
-            role: payload.role || 'USER',
-            avatarUrl: payload.avatar_url || null,
-            domain: payload.domain
-          };
-
-          return {
-            isValid: true,
-            user,
-            token: payload
-          };
+          // Get or create the user in the database
+          try {
+            const user = await getOrCreateUser(payload, c.env.DB);
+            return {
+              isValid: true,
+              user,
+              token: payload
+            };
+          } catch (dbError) {
+            console.error('Database error in cookie auth:', dbError);
+            return { isValid: false, error: 'Database error during user creation/retrieval' };
+          }
         }
       }
     }
@@ -325,21 +380,18 @@ async function verifyAuthFromRequest(c: Context): Promise<{
             return { isValid: false, error: 'Domain not allowed' };
           }
 
-          const user: AuthenticatedUser = {
-            id: payload.sub,
-            email: payload.email,
-            name: payload.name || null,
-            nick: null,
-            role: payload.role || 'USER',
-            avatarUrl: payload.avatar_url || null,
-            domain: payload.domain
-          };
-
-          return {
-            isValid: true,
-            user,
-            token: payload
-          };
+          // Get or create the user in the database
+          try {
+            const user = await getOrCreateUser(payload, c.env.DB);
+            return {
+              isValid: true,
+              user,
+              token: payload
+            };
+          } catch (dbError) {
+            console.error('Database error in bearer token auth:', dbError);
+            return { isValid: false, error: 'Database error during user creation/retrieval' };
+          }
         }
       }
     }
